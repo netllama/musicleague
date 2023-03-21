@@ -1,0 +1,53 @@
+{% from 'bootstrap5/form.html' import render_form %}
+{% from 'bootstrap5/utils.html' import render_messages %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ml.css') }}"/>
+    {{ bootstrap.load_css() }}
+    <title>{% block title %}{{ title }}{% endblock %}</title>
+</head>
+<body>
+    {{ bootstrap.load_js() }}
+    {% block scripts %}
+        {{ moment.include_moment() }}
+    {% endblock %}
+    {% block nav %}
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="music_league_logo"><hr><br>
+    <div id="navigation">
+    <table>
+	    <tbody>
+                    <tr>
+			    <td>&nbsp;<A HREF="{{ url_for('default') }}">Music Leagues</a></td>
+                            <td>&nbsp;<A HREF="{{ url_for('leagues') }}">Leagues</A></td>
+			    <td>&nbsp;Rounds</td>
+			    <td>&nbsp;Submit</td>
+			    <td>&nbsp;Vote</td>
+                            {% if current_user.is_anonymous %}
+			        <td>&nbsp;<A HREF="{{ url_for('signup') }}">Signup</A></td>
+                                <td>&nbsp;<A HREF="{{ url_for('login') }}">Login</A></td>
+                            {% else %}
+                                <td>&nbsp;<A HREF="{{ url_for('users') }}">Members</A></td>
+                                <td>&nbsp;<A HREF="{{ url_for('logout') }}">Logout</A></td>
+                            {% endif %}
+		    </tr>
+	    </tbody>
+    </table>
+    </div>
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}{{ content }}{% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+    <div id="footerwrap">
+        <div id="footer">
+            Music League footer!
+        </div>
+    </div>
+    {% endblock %}
+</body>
+</html>

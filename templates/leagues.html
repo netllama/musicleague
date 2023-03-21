@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            {{ render_messages() }}
+            {% if current_user.is_authenticated %}
+                <p><a href="{{ url_for('create') }}">&rarr;&nbsp;Create a new league&nbsp;&larr;</a></p>
+            {% endif %}
+            <p><b>Music Leagues:</b></p><BR>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Details</th>
+                        <th>Rounds</th>
+                        <th>End&nbsp;Date</th>
+                    </tr>
+                </thead>
+	        <tbody>
+                    {% for data in leagues %}
+                        <tr>
+                            <td><a href="{{ url_for('league') }}?id={{ data.id }}">{{ data.name }}</a></td>
+                            <td>{{ data.descr }}</td>
+                            <td>{{ data.round_count }}</td>
+                            <td>{{ moment(data.end_date).format('YYYY-MM-DD HH:mm') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table><br><br>
+            {% if prev_url or next_url %}
+            <table>
+                <thead>
+                    <tr>
+                    {% if prev_url %}
+                        <th><a href="{{ prev_url }}">&larr;&nbsp;More leagues</a></th>
+                    {% endif %}
+                    {% if prev_url and next_url %}
+                        <th>&nbsp;&nbsp;</th>
+                    {% endif %}
+                    {% if next_url %}
+                        <th><a href="{{ next_url }}">More leagues&nbsp;&rarr;</a></th>
+                    {% endif %}
+                    </tr>
+                </thead>
+            </table>
+            {% endif %}
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>

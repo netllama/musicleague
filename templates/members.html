@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+        <p>Music League members:</p><BR>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Last Login</th>
+                </tr>
+            </thead>
+	    <tbody>
+                {% for userdata in users %}
+                    <tr>
+                        <td>{{ userdata.username }}</td>
+                        <td>{{ userdata.name }}</td>
+                        <td>{{ userdata.last_login }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table><br><br>
+        {% if prev_url or next_url %}
+        <table>
+            <thead>
+                <tr>
+                {% if prev_url %}
+                    <th><a href="{{ prev_url }}">&larr;&nbsp;More members</a></th>
+                {% endif %}
+                <th>&nbsp;&nbsp;</th>
+                {% if next_url %}
+                    <th><a href="{{ next_url }}">More members&nbsp;&rarr;</a></th>
+                {% endif %}
+                </tr>
+            </thead>
+        </table>
+        {% endif %}
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>

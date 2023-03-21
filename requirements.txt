@@ -1,0 +1,12 @@
+bootstrap-flask
+email-validator
+Flask
+Flask-Login
+flask-mail
+flask-moment
+Flask-SQLAlchemy
+Flask-WTF
+psycopg2
+python-dotenv
+SQLAlchemy
+WTForms

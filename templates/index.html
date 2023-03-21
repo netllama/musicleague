@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            {{ super() }}
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>

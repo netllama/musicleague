@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            <p><b>{{ league.name }}</b></p>
+            <p>{{ league.descr }}</p><br>
+            <table>
+            <thead>
+                <tr>
+                    <th>Up Votes</th>
+                    <th>Down Votes</th>
+                    <th>Submit Days</th>
+                    <th>Vote Days</th>
+                    <th>Close Date</th>
+                    <th>Rounds</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ league.upvotes }}</td>
+                    <td>{{ league.downvotes }}</td>
+                    <td>{{ league.submit_days }}</td>
+                    <td>{{ league.vote_days }}</td>
+                    <td>{{ moment(league.end_date).format('YYYY-MM-DD HH:mm') }}</td>
+                    <td>{{ league.round_count }}</td>
+                <tr>
+            </tbody>
+            </table>
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>

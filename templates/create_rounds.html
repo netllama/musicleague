@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            {{ render_messages() }}
+            <p><b>Add {{ count }} rounds to your new league</b></p>
+            <form method="POST" action="" class="form" role="form">
+                
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% for r in range(0, count) %}
+                    <table id="rounds-0">
+                        <tr><th><div class="mb-3 required"><label class="form-label" for="rounds-{{ r }}-name">Round {{ r + 1 }} Name</label></th>
+                            <td><input class="form-control" id="rounds-{{ r }}-name" size="48" maxlength="48" name="rounds-{{ r }}-name" required type="text" value=""></div></td></tr>
+                        <tr><th><div class="mb-3 required"><label class="form-label" for="rounds-{{ r }}-descr">Description</label></th>
+                            <td><input class="form-control" id="rounds-{{ r }}-descr" size="128" maxlength="128" name="rounds-{{ r }}-descr" required type="text" value=""></div></td></tr>
+                    </table><br>
+                {% endfor %}
+                <br><input class="btn btn-primary btn-md" id="submit" name="submit" type="submit" value="Create Rounds">
+            </form>
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>
