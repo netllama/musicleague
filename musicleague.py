@@ -176,10 +176,11 @@ class Leagues(UserMixin, db.Model):
     def __repr__(self):
         return f'<Name {self.name}>'
 
-    def set_end_date(self, submit_days, vote_days):
+    def set_end_date(self, submit_days, vote_days, round_count):
         now = datetime.utcnow()
         total_days = (submit_days + vote_days) * round_count
         end_date = now + timedelta(days=total_days)
+        app.logger.debug(f'now = {now}\tsubmit_days = {submit_days}\tround_count = {round_count}\tvote_days = {vote_days}\tend_date = {end_date}')
         self.end_date = end_date
 
 class LeagueMembers(UserMixin, db.Model):
@@ -197,6 +198,7 @@ class Rounds(UserMixin, db.Model):
     league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'))
     name = db.Column(db.String(92))
     descr = db.Column(db.String(128))
+    end_date = db.Column(db.DateTime)
 
     def __repr__(self):
         return f'<Name {self.name}>'
@@ -283,14 +285,15 @@ def create():
     form = CreateLeagueForm()
     if form.validate_on_submit():
         user_id = current_user.get_id()
-        total_days = int(form.submit_days.data) + int(form.vote_days.data)
+        round_days = int(form.submit_days.data) + int(form.vote_days.data)
+        total_days = round_days * int(form.round_count.data)
         league = Leagues(name=form.name.data, submit_days=form.submit_days.data, vote_days=form.vote_days.data, descr=form.descr.data, upvotes=form.upvotes.data, downvotes=form.downvotes.data, round_count=form.round_count.data, owner_id=user_id)
-        league.set_end_date(form.submit_days.data, form.vote_days.data)
+        league.set_end_date(form.submit_days.data, form.vote_days.data, form.round_count.data)
         db.session.add(league)
         db.session.commit()
         flash_msg = Markup(f'Congratulations {current_user.name}! <br>You have created a new league called <b>{form.name.data}</b> which will close in {total_days} days')
         flash(flash_msg)
-        add_rounds = url_for('add_rounds', league_id=league.id, round_count=form.round_count.data)
+        add_rounds = url_for('add_rounds', league_id=league.id, round_count=form.round_count.data, round_days=round_days)
         return redirect(add_rounds)
     return render_template('create.html', title='Create a new Music League', form=form)
 
@@ -301,13 +304,17 @@ def add_rounds():
     """Add rounds to the new league."""
     league_id = request.args.get('league_id', 0, type=int)
     round_count = request.args.get('round_count', 0, type=int)
-    if league_id == 0 or round_count == 0:
+    round_days = request.args.get('round_days', 0, type=int)
+    if league_id == 0 or round_count == 0 or round_days == 0:
         flash('Invalid league specified', 'error')
         return redirect(url_for('leagues'))
     form = AddRoundsForm()
     if form.validate_on_submit():
-        for round_data in form.data['rounds']:
-            round_record = Rounds(league_id=league_id, name=round_data['name'], descr=round_data['descr'])
+        now = datetime.utcnow()
+        for day, round_data in enumerate(form.data['rounds'], start=1):
+            days = round_days * day
+            end_date = now + timedelta(days=days)
+            round_record = Rounds(league_id=league_id, name=round_data['name'], descr=round_data['descr'], end_date=end_date)
             db.session.add(round_record)
         db.session.commit()
         flash_msg = Markup(f'{round_count} rounds added to your league')
