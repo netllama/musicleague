@@ -7,8 +7,16 @@
     <div id="contentliquid"><div id="contentwrap">
         <div id="content">
         {% block content %}
+            {{ render_messages() }}
             <p><b>{{ league.name }}</b></p>
-            <p>{{ league.descr }}</p><br>
+            <p>{{ league.descr }}</p>
+            {% if current_user.is_authenticated and button %}
+                <form method="GET" action="" class="form" role="form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="id" value="{{ id }}" />
+                    <input class="btn btn-primary btn-md" id="submit" name="submit" type="submit" value="Join This League!">
+                </form><br>
+            {% endif %}
             <table>
             <thead>
                 <tr>
@@ -28,7 +36,26 @@
                     <td>{{ league.vote_days }}</td>
                     <td>{{ moment(league.end_date).format('YYYY-MM-DD HH:mm') }}</td>
                     <td>{{ league.round_count }}</td>
+                </tr>
+            </tbody>
+            </table><br>
+            <p><b>Rounds</b></p>
+            <table>
+            <thead>
                 <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>End Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in rounds %}
+                    <tr>
+                        <td><a href="{{ url_for('round_') }}?id={{ data.id }}">{{ data.name }}</a></td>
+                        <td>{{ data.descr }}</td>
+                        <td>{{ moment(data.end_date).format('YYYY-MM-DD HH:mm') }}</td>
+                    </tr>
+                {% endfor %}
             </tbody>
             </table>
         {% endblock %}

@@ -275,7 +275,26 @@ def league():
     if not league:
         flash('Invalid league selected', 'error')
         return redirect(url_for('leagues'))
-    return render_template('league.html', title='View / Join this Music League', league=league)
+    rounds = Rounds.query.filter_by(league_id=league_id).order_by(Rounds.end_date.asc())
+    add_button = False
+    if current_user.is_authenticated:
+        user_id = current_user.get_id()
+        if request.method == 'GET' and request.args.get('submit', None):
+            member = LeagueMembers(league_id=league_id, user_id=user_id)
+            db.session.add(member)
+            db.session.commit()
+            flash("You've been added to this league successfully. Start submitting to the next open round.")
+        else:
+            am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
+            add_button = False if am_a_member else True
+    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, button=add_button)
+
+
+@app.route('/round', methods=['GET', 'POST'])
+@login_required
+def round_():
+    """Round details."""
+    return render_template('round.html', title='View Round')
 
 
 @app.route('/create', methods=['GET', 'POST'])
