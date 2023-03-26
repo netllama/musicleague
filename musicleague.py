@@ -277,17 +277,39 @@ def league():
         return redirect(url_for('leagues'))
     rounds = Rounds.query.filter_by(league_id=league_id).order_by(Rounds.end_date.asc())
     add_button = False
+    am_a_member = False
+    actions = {r.id: ''  for r in rounds}
+    print(f'actions = {actions}')
     if current_user.is_authenticated:
         user_id = current_user.get_id()
+        now = datetime.utcnow()
         if request.method == 'GET' and request.args.get('submit', None):
             member = LeagueMembers(league_id=league_id, user_id=user_id)
             db.session.add(member)
             db.session.commit()
             flash("You've been added to this league successfully. Start submitting to the next open round.")
         else:
-            am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
-            add_button = False if am_a_member else True
-    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, button=add_button)
+            join_cut_off_date = league.end_date - timedelta(days=league.vote_days)
+            too_late = True if now > join_cut_off_date else False
+        am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
+        add_button = False if am_a_member or too_late else True
+        if am_a_member:
+            round_days_total = league.submit_days + league.vote_days
+            for round_data in rounds:
+                vote_start_date = round_data.end_date - timedelta(days=league.vote_days)
+                submit_start_date = round_data.end_date - timedelta(days=round_days_total)
+                if now >= round_data.end_date:
+                    action = 'ENDED'
+                elif now >= vote_start_date and now < round_data.end_date:
+                    #print(f'now = {now}\t')
+                    action = Markup('VOTE&nbsp;NOW')
+                elif now >= submit_start_date and now < vote_start_date:
+                    print(f'now = {now}\tsubmit_start_date = {submit_start_date}\tvote_start_date = {vote_start_date}')
+                    action = Markup('<b>SUBMIT&nbsp;NOW</b>')
+                else:
+                    action = Markup('NOT&nbsp;STARTED')
+                actions[round_data.id] = action
+    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, button=add_button, member=am_a_member, actions=actions)
 
 
 @app.route('/round', methods=['GET', 'POST'])
@@ -391,7 +413,7 @@ def send_email(subject, sender, recipients, text_body, html_body):
 # used by 'flask shell' to setup query context
 @app.shell_context_processor
 def make_shell_context():
-    return {'db': db, 'Users': Users, 'Icons': Icons, 'Leagues': Leagues, 'Rounds': Rounds, 'Songs': Songs, 'Votes': Votes}
+    return {'db': db, 'Users': Users, 'Icons': Icons, 'Leagues': Leagues, 'LeagueMembers':LeagueMembers, 'Rounds': Rounds, 'Songs': Songs, 'Votes': Votes}
 
 
 @login_mgr.user_loader
