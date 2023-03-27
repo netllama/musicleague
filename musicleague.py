@@ -508,8 +508,12 @@ def submit_song():
         return redirect(url_for('leagues'))
     form = SubmitSongForm(user=user_id, round=round_id, league=league_id)
     if form.validate_on_submit():
-        song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data)
-        db.session.add(song)
+        songs = Songs.query.filter_by(round_id=round_id).filter_by(song_url=form.song_url.data).first()
+        if songs:
+            flash(f'Someone else has already submitted this song ( {form.song_url.data} )')
+            return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
+        new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data)
+        db.session.add(new_song)
         db.session.commit()
         flash('Thanks for submitting the song for this round')
         return redirect(url_for('round_', id=round_id))
