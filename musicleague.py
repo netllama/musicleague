@@ -16,7 +16,7 @@ from randimage import get_random_image
 from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.urls import url_parse
-from wtforms import BooleanField, EmailField, FieldList, FormField, IntegerRangeField, PasswordField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, EmailField, FieldList, FormField, HiddenField, IntegerRangeField, PasswordField, StringField, SubmitField, TextAreaField, URLField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 
 
@@ -94,6 +94,16 @@ class AddRoundsForm(FlaskForm):
     rounds = FieldList(FormField(RoundsForm), min_entries=1, max_entries=20)
     submit = SubmitField('Create Rounds')
 
+class SubmitSongForm(FlaskForm):
+    descr_max_length = 128
+    descr_max_length_msg = f'Song descriptions cannot be longer than {descr_max_length} characters long'
+    user = HiddenField('user_id', validators=[DataRequired()])
+    round = HiddenField('round_id', validators=[DataRequired()])
+    league = HiddenField('league_id', validators=[DataRequired()])
+    song_url = URLField('Youtube song link', validators=[DataRequired()])
+    descr = TextAreaField('Song description', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
+    submit = SubmitField('Submit Song')
+
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY')
@@ -144,6 +154,11 @@ class Users(UserMixin, db.Model):
     active = db.Column(db.Boolean, default=True)
     icon_id = db.Column(db.Integer, db.ForeignKey('icons.id'), nullable=True)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
+    icons = db.relationship('Icons', back_populates='user')
+    leagues = db.relationship('Leagues', back_populates='user')
+    members = db.relationship('LeagueMembers', back_populates='user')
+    songs = db.relationship('Songs', back_populates='user')
+    votes = db.relationship('Votes', back_populates='user')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -158,7 +173,7 @@ class Icons(UserMixin, db.Model):
     __tablename__ = 'icons'
     id = db.Column(db.Integer, primary_key=True)
     icon = db.Column(db.LargeBinary)
-
+    user = db.relationship('Users', back_populates ='icons')
 
 class Leagues(UserMixin, db.Model):
     __tablename__ = 'leagues'
@@ -172,6 +187,11 @@ class Leagues(UserMixin, db.Model):
     downvotes = db.Column(db.Integer, default=0)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     round_count = db.Column(db.Integer, db.CheckConstraint('round_count > 0', name='positive_round_cnt'), default=1)
+    user = db.relationship('Users', back_populates='leagues')
+    members = db.relationship('LeagueMembers', back_populates='leagues')
+    rounds = db.relationship('Rounds', back_populates='leagues')
+    songs = db.relationship('Songs', back_populates='leagues')
+    votes = db.relationship('Votes', back_populates='leagues')
 
     def __repr__(self):
         return f'<Name {self.name}>'
@@ -188,6 +208,8 @@ class LeagueMembers(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('Users', back_populates='members')
+    leagues = db.relationship('Leagues', back_populates='members')
 
     def __repr__(self):
         return f'<League Id {self.league_id}\tUser Id {self.user_id}>'
@@ -199,6 +221,9 @@ class Rounds(UserMixin, db.Model):
     name = db.Column(db.String(92))
     descr = db.Column(db.String(128))
     end_date = db.Column(db.DateTime)
+    leagues = db.relationship('Leagues', back_populates='rounds')
+    songs = db.relationship('Songs', back_populates='rounds')
+    votes = db.relationship('Votes', back_populates='rounds')
 
     def __repr__(self):
         return f'<Name {self.name}>'
@@ -211,6 +236,10 @@ class Songs(UserMixin, db.Model):
     round_id = db.Column(db.Integer, db.ForeignKey('rounds.id'))
     song_url = db.Column(db.String(512))
     descr = db.Column(db.String(128), nullable=True)
+    leagues = db.relationship('Leagues', back_populates='songs')
+    user = db.relationship('Users', back_populates='songs')
+    rounds = db.relationship('Rounds', back_populates='songs')
+    votes = db.relationship('Votes', back_populates='songs')
 
     def __repr__(self):
         return f'<Id {self.id}\tURL {self.song_url}>'
@@ -225,6 +254,10 @@ class Votes(UserMixin, db.Model):
     votes = db.Column(db.Integer, default=0)
     comment = db.Column(db.String(256), nullable=True)
     vote_date = db.Column(db.DateTime, default=datetime.utcnow())
+    leagues = db.relationship('Leagues', back_populates='votes')
+    rounds = db.relationship('Rounds', back_populates='votes')
+    songs = db.relationship('Songs', back_populates='votes')
+    user = db.relationship('Users', back_populates='votes')
 
     def __repr__(self):
         return f'<Song Id {self.song_id}\tVotes {self.votes}>'
@@ -267,6 +300,7 @@ def leagues():
 @app.route('/league', methods=['GET', 'POST'])
 def league():
     """View/Join a league."""
+    now = datetime.utcnow()
     league_id = request.args.get('id', 0, type=int)
     if league_id == 0:
         flash('Invalid league selected', 'error')
@@ -275,14 +309,13 @@ def league():
     if not league:
         flash('Invalid league selected', 'error')
         return redirect(url_for('leagues'))
+    league_status = 'ENDED' if now > league.end_date else 'RUNNING'
     rounds = Rounds.query.filter_by(league_id=league_id).order_by(Rounds.end_date.asc())
     add_button = False
     am_a_member = False
     actions = {r.id: ''  for r in rounds}
-    print(f'actions = {actions}')
     if current_user.is_authenticated:
         user_id = current_user.get_id()
-        now = datetime.utcnow()
         if request.method == 'GET' and request.args.get('submit', None):
             member = LeagueMembers(league_id=league_id, user_id=user_id)
             db.session.add(member)
@@ -291,32 +324,91 @@ def league():
         else:
             join_cut_off_date = league.end_date - timedelta(days=league.vote_days)
             too_late = True if now > join_cut_off_date else False
+        # verify league membership status
         am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
         add_button = False if am_a_member or too_late else True
         if am_a_member:
-            round_days_total = league.submit_days + league.vote_days
             for round_data in rounds:
-                vote_start_date = round_data.end_date - timedelta(days=league.vote_days)
-                submit_start_date = round_data.end_date - timedelta(days=round_days_total)
-                if now >= round_data.end_date:
+                round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_data.id)
+                if round_status == 0:
                     action = 'ENDED'
-                elif now >= vote_start_date and now < round_data.end_date:
-                    #print(f'now = {now}\t')
+                elif round_status == 1:
                     action = Markup('VOTE&nbsp;NOW')
-                elif now >= submit_start_date and now < vote_start_date:
-                    print(f'now = {now}\tsubmit_start_date = {submit_start_date}\tvote_start_date = {vote_start_date}')
+                elif round_status == 2:
                     action = Markup('<b>SUBMIT&nbsp;NOW</b>')
+                elif round_status == 3:
+                    # submitted already
+                    action = Markup('<b>SUBMITTED</b>')
+                elif round_status == 4:
+                    # voted already
+                    action = Markup('<b>VOTED</b>')
                 else:
+                    # -1
                     action = Markup('NOT&nbsp;STARTED')
                 actions[round_data.id] = action
-    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, button=add_button, member=am_a_member, actions=actions)
+    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, status=league_status, button=add_button, member=am_a_member, actions=actions)
+
+
+@app.route('/standings', methods=['GET'])
+@login_required
+def standings():
+    """View current league standings (total points for each member)."""
+    now = datetime.utcnow()
+    league_id = request.args.get('id', 0, type=int)
+    if league_id == 0:
+        flash('Invalid league selected', 'error')
+        return redirect(url_for('leagues'))
+    league = Leagues.query.get(league_id)
+    if not league:
+        flash('Invalid league selected', 'error')
+        return redirect(url_for('leagues'))
+    league_status = 'ENDED' if now > league.end_date else 'RUNNING'
+    
+    return render_template('standings.html', title='View League Standings', status=league_status, end_date=league.end_date)
 
 
 @app.route('/round', methods=['GET', 'POST'])
 @login_required
 def round_():
     """Round details."""
-    return render_template('round.html', title='View Round')
+    user_id = current_user.get_id()
+    round_id = request.args.get('id', 0, type=int)
+    if round_id == 0:
+        flash('Invalid round selected', 'error')
+        return redirect(url_for('leagues'))
+    round_data = Rounds.query.get(round_id)
+    if not round_data:
+        flash('Invalid round selected', 'error')
+        return redirect(url_for('leagues'))
+    league_id = round_data.league_id
+    league = Leagues.query.get(league_id)
+    if not league:
+        flash('Invalid league selected', 'error')
+        return redirect(url_for('leagues'))
+    # verify league membership status
+    am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
+    if not am_a_member:
+        flash('Not a member of the league, cannot view round data', 'error')
+        return redirect(url_for('leagues'))
+    round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_id)
+    if round_status == 0:
+        # ended
+        songs = Songs.query.filter_by(league_id=league_id).filter_by(round_id=round_id).order_by(Songs.id)
+        votes = Votes.query.filter_by(league_id=league_id).filter_by(round_id=round_id).order_by(Votes.vote_date)
+    elif round_status == 1:
+        # vote
+        return redirect(url_for('vote', id=league_id, round=round_id, user=user_id))
+    elif round_status == 2:
+        # submit song
+        return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
+    elif round_status in [3, 4]:
+        # already submitted or already voted
+        pass
+    else:
+        # not started, or invalid status provided
+        flash('The selected round has not yet started', 'error')
+        return redirect(url_for('league', id=league_id))
+    return render_template('round.html', title='View Round', status=round_status, round_data=round_data)
 
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -397,6 +489,33 @@ def signup():
     return render_template('signup.html', title="CPU Music League Sign Up", form=form)
 
 
+@app.route('/submit', methods=['GET', 'POST'])
+@login_required
+def submit_song():
+    """Submit a song to a round."""
+    user_id = current_user.get_id()
+    user__id = request.args.get('user', 0, type=int)
+    if int(user_id) != user__id:
+        flash('Invalid user', 'error')
+        return redirect(url_for('leagues'))
+    round_id = request.args.get('round', 0, type=int)
+    if round_id == 0:
+        flash('Invalid round selected', 'error')
+        return redirect(url_for('leagues'))
+    league_id = request.args.get('id', 0, type=int)
+    if league_id == 0:
+        flash('Invalid round selected', 'error')
+        return redirect(url_for('leagues'))
+    form = SubmitSongForm(user=user_id, round=round_id, league=league_id)
+    if form.validate_on_submit():
+        song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data)
+        db.session.add(song)
+        db.session.commit()
+        flash('Thanks for submitting the song for this round')
+        return redirect(url_for('round_', id=round_id))
+    return render_template('submit.html', title='Submit a Song', form=form)
+
+
 def send_async_email(app, msg):
     with app.app_context():
         mail.send(msg)
@@ -408,6 +527,49 @@ def send_email(subject, sender, recipients, text_body, html_body):
     msg.body = text_body
     msg.html = html_body
     mail.send(msg)
+
+
+def get_round_status(submit_days, vote_days, round_end_date, round_id):
+    """Determine the status of specified round, based on date data.
+
+    returns integer value indicating status:
+        -1 = not started
+        0 = ended/finished
+        1 = voting in progress
+        2 = submissions in progress
+        3 = already submitted a song
+        4 = already voted
+    """
+    user_id = current_user.get_id()
+    round_status = -1
+    now = datetime.utcnow()
+    round_days_total = submit_days + vote_days
+    vote_start_date = round_end_date - timedelta(days=vote_days)
+    submit_start_date = round_end_date - timedelta(days=round_days_total)
+    submitted = is_song_submitted(user_id, round_id)
+    voted = False
+    if now >= round_end_date:
+        round_status = 0
+    elif now >= vote_start_date and now < round_end_date:
+        if voted:
+            round_status = 4
+        else:
+            round_status = 1
+    elif now >= submit_start_date and now < vote_start_date:
+        if submitted:
+            round_status = 3
+        else:
+            round_status = 2
+    return round_status
+
+
+def is_song_submitted(user_id, round_id):
+    """Determine whether this user already submitted a song for this round."""
+    is_submitted = False
+    songs = Songs.query.filter_by(user_id=user_id).filter_by(round_id=round_id).first()
+    if songs:
+        is_submitted = True
+    return is_submitted
 
 
 # used by 'flask shell' to setup query context

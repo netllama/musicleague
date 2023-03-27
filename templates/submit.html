@@ -8,7 +8,8 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-            Round
+            <p><b>Submit your song</b></p><br>
+            {{ render_form(form) }}
         {% endblock %}
         </div>
     </div></div>

@@ -20,12 +20,16 @@
             <table>
             <thead>
                 <tr>
-                    <th>Up Votes</th>
-                    <th>Down Votes</th>
-                    <th>Submit Days</th>
-                    <th>Vote Days</th>
-                    <th>End Date</th>
+                    <th>Up&nbsp;Votes</th>
+                    <th>Down&nbsp;Votes</th>
+                    <th>Submit&nbsp;Days</th>
+                    <th>Vote&nbsp;Days</th>
                     <th>Rounds</th>
+                    <th>End&nbsp;Date</th>
+                    <th>Status</th>
+                    {% if current_user.is_authenticated and member %}
+                        <th>Current&nbsp;Standings</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -34,8 +38,17 @@
                     <td>{{ league.downvotes }}</td>
                     <td>{{ league.submit_days }}</td>
                     <td>{{ league.vote_days }}</td>
-                    <td>{{ moment(league.end_date).format('YYYY-MM-DD HH:mm') }}</td>
                     <td>{{ league.round_count }}</td>
+                    <td>{{ moment(league.end_date).format('YYYY-MM-DD HH:mm') }}</td>
+                    <td>{{ status }}</td>
+                    {% if current_user.is_authenticated and member %}
+                        {% if status == 'RUNNING' %}
+                            {% set standing = 'Current Results' %}
+                        {% else %}
+                            {% set standing = 'Final Results' %}
+                        {% endif %}
+                        <td><a href="{{ url_for('standings') }}?id={{ id }}">{{ standing }}</a></td>
+                    {% endif %}
                 </tr>
             </tbody>
             </table><br>
@@ -62,7 +75,7 @@
                         <td>{{ data.descr }}</td>
                         <td>{{ moment(data.end_date).format('YYYY-MM-DD HH:mm') }}</td>
                         {% if current_user.is_authenticated and member %}
-                            <td>{{ actions[data.id] }}</td>
+                            <td><a href="{{ url_for('round_') }}?id={{ data.id }}">{{ actions[data.id] }}</a></td>
                         {% endif %}
                     </tr>
                 {% endfor %}
