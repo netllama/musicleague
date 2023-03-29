@@ -239,6 +239,7 @@ class Songs(UserMixin, db.Model):
     round_id = db.Column(db.Integer, db.ForeignKey('rounds.id'))
     song_url = db.Column(db.String(512))
     descr = db.Column(db.String(128), nullable=True)
+    video_id = db.Column(db.String(32))
     title = db.Column(db.String(512))
     thumbnail = db.Column(db.String(256))
     leagues = db.relationship('Leagues', back_populates='songs')
@@ -521,7 +522,7 @@ def submit_song():
         if not song_data:
             flash(f'Invalid youtube song link ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
-        new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data, title=song_data['title'], thumbnail=song_data['thumbnail'])
+        new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data, video_id=song_data['video_id'], title=song_data['title'], thumbnail=song_data['thumbnail'])
         db.session.add(new_song)
         db.session.commit()
         flash(f"Thanks for submitting the song ( {song_data['title']} ) for this round")
@@ -608,6 +609,7 @@ def get_yt_song_data(song_url):
     if not data:
         app.logger.warning(f'Invalid video Id specified ( {song_url} )')
         return song_data
+    song_data['video_id'] = data['video_id']
     song_data['title'] = data['video_title']
     song_data['thumbnail'] = data['video_thumbnail']
     return song_data
