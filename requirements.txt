@@ -10,3 +10,4 @@ psycopg2
 python-dotenv
 SQLAlchemy
 WTForms
+youtube-data-api

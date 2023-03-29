@@ -14,10 +14,12 @@ from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
 from randimage import get_random_image
 from sqlalchemy import func
+from urllib.parse import urlparse
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.urls import url_parse
 from wtforms import BooleanField, EmailField, FieldList, FormField, HiddenField, IntegerRangeField, PasswordField, StringField, SubmitField, TextAreaField, URLField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
+import youtube_api
 
 
 class Config(object):
@@ -34,6 +36,7 @@ class Config(object):
     LEAGUES_PER_PAGE = 9
     SONGS_PER_PAGE = 10
     USERS_PER_PAGE = 20
+    YT_API_KEY = os.environ.get('YT_API_KEY')
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -236,6 +239,8 @@ class Songs(UserMixin, db.Model):
     round_id = db.Column(db.Integer, db.ForeignKey('rounds.id'))
     song_url = db.Column(db.String(512))
     descr = db.Column(db.String(128), nullable=True)
+    title = db.Column(db.String(512))
+    thumbnail = db.Column(db.String(256))
     leagues = db.relationship('Leagues', back_populates='songs')
     user = db.relationship('Users', back_populates='songs')
     rounds = db.relationship('Rounds', back_populates='songs')
@@ -388,7 +393,7 @@ def round_():
     # verify league membership status
     am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
     if not am_a_member:
-        flash('Not a member of the league, cannot view round data', 'error')
+        flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
     round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_id)
     if round_status == 0:
@@ -512,10 +517,14 @@ def submit_song():
         if songs:
             flash(f'Someone else has already submitted this song ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
-        new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data)
+        song_data = get_yt_song_data(form.song_url.data)
+        if not song_data:
+            flash(f'Invalid youtube song link ( {form.song_url.data} )')
+            return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
+        new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data, title=song_data['title'], thumbnail=song_data['thumbnail'])
         db.session.add(new_song)
         db.session.commit()
-        flash('Thanks for submitting the song for this round')
+        flash(f"Thanks for submitting the song ( {song_data['title']} ) for this round")
         return redirect(url_for('round_', id=round_id))
     return render_template('submit.html', title='Submit a Song', form=form)
 
@@ -574,6 +583,34 @@ def is_song_submitted(user_id, round_id):
     if songs:
         is_submitted = True
     return is_submitted
+
+
+def get_yt_song_data(song_url):
+    """Query youtube API for song data."""
+    song_data = {}
+    try:
+        # get API client
+        yt = youtube_api.YouTubeDataAPI(app.config['YT_API_KEY'])
+    except ValueError:
+        app.logger.error('Invalid youtube API key')
+        return song_data
+    # parse song_url
+    parsed = urlparse(song_url)
+    if parsed.netloc != 'www.youtube.com':
+        app.logger.info(f'Invalid song_url specified ( {song_url} )')
+        return song_data
+    video_id = parsed.query.replace('v=', '')
+    try:
+        data = yt.get_video_metadata(video_id)
+    except TypeError as err:
+        app.logger.warning(f'Invalid video Id specified ( {song_url} )')
+        return song_data
+    if not data:
+        app.logger.warning(f'Invalid video Id specified ( {song_url} )')
+        return song_data
+    song_data['title'] = data['video_title']
+    song_data['thumbnail'] = data['video_thumbnail']
+    return song_data
 
 
 # used by 'flask shell' to setup query context
