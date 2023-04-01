@@ -110,12 +110,10 @@ class SubmitSongForm(FlaskForm):
 class VoteForm(FlaskForm):
     comment_max_length = 128
     comment_max_length_msg = f'Song comment cannot be longer than {comment_max_length} characters long'
-    user = HiddenField('user_id', validators=[DataRequired()])
     round = HiddenField('round_id', validators=[DataRequired()])
     league = HiddenField('league_id', validators=[DataRequired()])
     song = HiddenField('song_id', validators=[DataRequired()])
-    upvote = IntegerField('upvote', default=0, validators=[DataRequired()])
-    downvote = IntegerField('downvote', default=0, validators=[DataRequired()])
+    vote = IntegerField('vote', default=0, validators=[DataRequired()])
     comment = TextAreaField('Song comment', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=comment_max_length, message=comment_max_length_msg)])
     submit = SubmitField('Submit Votes')
 
@@ -351,15 +349,15 @@ def league():
                 if round_status == 0:
                     action = 'ENDED'
                 elif round_status == 1:
-                    action = Markup('VOTE&nbsp;NOW')
+                    action = Markup('<b>VOTE&nbsp;NOW</b>')
                 elif round_status == 2:
                     action = Markup('<b>SUBMIT&nbsp;NOW</b>')
                 elif round_status == 3:
                     # submitted already
-                    action = Markup('<b>SUBMITTED</b>')
+                    action = Markup('<b>YOU SUBMITTED</b>')
                 elif round_status == 4:
                     # voted already
-                    action = Markup('<b>VOTED</b>')
+                    action = Markup('<b>YOU VOTED</b>')
                 else:
                     # -1
                     action = Markup('NOT&nbsp;STARTED')
@@ -570,8 +568,16 @@ def vote():
         flash('Zero songs to vote on in this round', 'error')
         return redirect(url_for('round_', id=round_id))
     form = VoteForm()
-    if form.validate_on_submit():
-        pass
+    if request.method == 'POST' and form.is_submitted():
+        song_ids = [i.id for i in songs.all()]
+        for song_id in song_ids:
+            votes = request.form.get(f'vote-{song_id}', type=int)
+            comment = request.form.get(f'comment-{song_id}', '')
+            vote = Votes(song_id=song_id, league_id=league_id, round_id=round_id, user_id=user_id, votes=votes, comment=comment)
+            db.session.add(vote)
+        db.session.commit()
+        flash(f'Thanks for voting in round: {round_data.name}')
+        return redirect(url_for('round_', id=round_id))
     return render_template('vote.html', title='Vote for songs', songs=songs.all())
 
 
@@ -605,16 +611,16 @@ def get_round_status(submit_days, vote_days, round_end_date, round_id):
     round_days_total = submit_days + vote_days
     vote_start_date = round_end_date - timedelta(days=vote_days)
     submit_start_date = round_end_date - timedelta(days=round_days_total)
-    submitted = is_song_submitted(user_id, round_id)
-    voted = False
     if now >= round_end_date:
         round_status = 0
     elif now >= vote_start_date and now < round_end_date:
+        voted = has_user_voted(user_id, round_id)
         if voted:
             round_status = 4
         else:
             round_status = 1
     elif now >= submit_start_date and now < vote_start_date:
+        submitted = is_song_submitted(user_id, round_id)
         if submitted:
             round_status = 3
         else:
@@ -629,6 +635,15 @@ def is_song_submitted(user_id, round_id):
     if songs:
         is_submitted = True
     return is_submitted
+
+
+def has_user_voted(user_id, round_id):
+    """Determine whether this user has already voted in this round."""
+    has_voted = False
+    votes = Votes.query.filter_by(user_id=user_id).filter_by(round_id=round_id).first()
+    if votes:
+        has_voted = True
+    return has_voted
 
 
 def get_yt_song_data(song_url):

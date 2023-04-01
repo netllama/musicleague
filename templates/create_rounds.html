@@ -10,7 +10,6 @@
             {{ render_messages() }}
             <p><b>Add {{ count }} rounds to your new league</b></p>
             <form method="POST" action="" class="form" role="form">
-                
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 {% for r in range(0, count) %}
                     <table id="rounds-0">

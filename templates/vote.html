@@ -8,14 +8,17 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-            <p><b>Vote &quot;{{ songs[0].rounds.name }}&quot;&nbsp;|&nbsp;{{ songs[0].leagues.upvotes }} Upvotes&nbsp;|&nbsp;{{ songs[0].leagues.downvotes }} Downvotes&nbsp;</b></p><br>
+            <p><b>Vote &quot;{{ songs[0].rounds.name }}&quot;&nbsp;|&nbsp;
+                {{ songs[0].leagues.upvotes }} Upvotes&nbsp;|&nbsp;
+                {{ songs[0].leagues.downvotes }} Downvotes&nbsp;|&nbsp;Voting&nbsp;Ends: 
+                {{ moment(songs[0].rounds.end_date).format('YYYY-MM-DD HH:mm') }}
+                </b></p><br>
             <form method="POST" action="" class="form" role="form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input id="user" name="user" required type="hidden" value="">
-                <input id="round" name="round" required type="hidden" value="">
-                <input id="league" name="league" required type="hidden" value="">
+                <input id="round" name="round" required type="hidden" value="{{ songs[0].round_id }}">
+                <input id="league" name="league" required type="hidden" value="{{ songs[0].league_id }}">
                 {% for s in songs %}
-                <table>
+                <table id="song-{{ s.id }}">
                     <tr>
                         <td>
                             <b>{{ s.title }}</b>
@@ -37,18 +40,19 @@
                     </tr>
                     <tr>
                         <td>
-                            <div class="mb-3"><label class="form-label" for="comment_{{ s.id }}"><b>Song comment</b></label>
-                                <textarea class="form-control" cols="50" id="comment_{{ s.id }}" maxlength="128" name="comment_{{ s.id }}" rows="5"></textarea>
+                            <div class="mb-3"><label class="form-label" for="comment-{{ s.id }}"><b>Song comment</b></label>
+                                <textarea class="form-control" cols="50" id="comment-{{ s.id }}" maxlength="128" name="comment-{{ s.id }}" rows="5"></textarea>
                             </div>
                         </td>
                         <td>
-                            <div class="mb-3 required"><label class="form-label" for="upvote_{{ s.id }}"><b>Votes</b></label>
-                                <input class="form-control" id="upvote_{{ s.id }}" name="upvote_{{ s.id }}" required 
-                                    type="number" value="0" min="-{{ s.leagues.downvotes }}" max="{{ s.leagues.upvotes }}">
+                            <div class="mb-3 required"><label class="form-label" for="vote-{{ s.id }}"><b>Votes</b></label>
+                                <input class="form-control" id="vote-{{ s.id }}" name="vote-{{ s.id }}" required 
+                                    type="number" min="-{{ s.leagues.downvotes }}" max="{{ s.leagues.upvotes }}">
                             </div>
                         </td>
                     </tr>
                 </table><br><br>
+                <input id="song" name="song" required type="hidden" value="{{ s.id }}">
                 {% endfor %}
                 <br><input class="btn btn-primary btn-md" id="submit" name="submit" type="submit" value="Submit Votes">
             </form><br>

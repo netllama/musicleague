@@ -22,9 +22,6 @@
                     <tr>
 			    <td>&nbsp;<A HREF="{{ url_for('default') }}">Music Leagues</a></td>
                             <td>&nbsp;<A HREF="{{ url_for('leagues') }}">Leagues</A></td>
-			    <td>&nbsp;Rounds</td>
-			    <td>&nbsp;Submit</td>
-			    <td>&nbsp;Vote</td>
                             {% if current_user.is_anonymous %}
 			        <td>&nbsp;<A HREF="{{ url_for('signup') }}">Signup</A></td>
                                 <td>&nbsp;<A HREF="{{ url_for('login') }}">Login</A></td>

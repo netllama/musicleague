@@ -8,27 +8,21 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-            <p>Round: <b>{{ round_data.name }}</b></p>
+            <p>League:&nbsp;<a href="{{ url_for('league') }}?id={{ round_data.leagues.id }}"><b>{{ round_data.leagues.name }}</b></a>&nbsp;|&nbsp;Round:&nbsp;<b>{{ round_data.name }}</b></p>
             <p>{{ round_data.descr }}</p>
-            <table>
-            <thead>
-                <tr>
-                    <th>Song</th>
-                    <th>Description</th>
-                    <th>&nbsp;</th>
-                    <th>&nbsp;</th>
-                </tr>
-            </thead>
-            <tbody>
                 {% for song_data in round_data.songs %}
+                <table>
                     <tr>
                         <td>{{ song_data.title }}</td>
                         <td>{{ song_data.descr }}</td>
+                    </tr>
+                    <tr>
                         <td><div style=overflow:hidden;resize:none;max-width:100%;>
                             <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
                             <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ song_data.video_id }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div></td>
                         <td><a href="{{ song_data.song_url }}"><img src="{{ song_data.thumbnail }}" alt="thumnail"></a></td>
                     </tr>
+                </table><br><br>
                 {% endfor %}
             </tbody>
             </table>
