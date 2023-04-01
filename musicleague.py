@@ -17,7 +17,7 @@ from sqlalchemy import func
 from urllib.parse import urlparse
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.urls import url_parse
-from wtforms import BooleanField, EmailField, FieldList, FormField, HiddenField, IntegerRangeField, PasswordField, StringField, SubmitField, TextAreaField, URLField
+from wtforms import BooleanField, EmailField, FieldList, FormField, HiddenField, IntegerField, IntegerRangeField, PasswordField, StringField, SubmitField, TextAreaField, URLField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 import youtube_api
 
@@ -106,6 +106,18 @@ class SubmitSongForm(FlaskForm):
     song_url = URLField('Youtube song link', validators=[DataRequired()])
     descr = TextAreaField('Song description', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
     submit = SubmitField('Submit Song')
+
+class VoteForm(FlaskForm):
+    comment_max_length = 128
+    comment_max_length_msg = f'Song comment cannot be longer than {comment_max_length} characters long'
+    user = HiddenField('user_id', validators=[DataRequired()])
+    round = HiddenField('round_id', validators=[DataRequired()])
+    league = HiddenField('league_id', validators=[DataRequired()])
+    song = HiddenField('song_id', validators=[DataRequired()])
+    upvote = IntegerField('upvote', default=0, validators=[DataRequired()])
+    downvote = IntegerField('downvote', default=0, validators=[DataRequired()])
+    comment = TextAreaField('Song comment', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=comment_max_length, message=comment_max_length_msg)])
+    submit = SubmitField('Submit Votes')
 
 
 app = Flask(__name__, static_folder='static')
@@ -403,7 +415,7 @@ def round_():
         votes = Votes.query.filter_by(league_id=league_id).filter_by(round_id=round_id).order_by(Votes.vote_date)
     elif round_status == 1:
         # vote
-        return redirect(url_for('vote', id=league_id, round=round_id, user=user_id))
+        return redirect(url_for('vote', id=round_id))
     elif round_status == 2:
         # submit song
         return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
@@ -528,6 +540,39 @@ def submit_song():
         flash(f"Thanks for submitting the song ( {song_data['title']} ) for this round")
         return redirect(url_for('round_', id=round_id))
     return render_template('submit.html', title='Submit a Song', form=form)
+
+
+@app.route('/vote', methods=['GET', 'POST'])
+@login_required
+def vote():
+    """Vote for songs in the league/round."""
+    user_id = current_user.get_id()
+    round_id = request.args.get('id', 0, type=int)
+    if round_id == 0:
+        flash('Invalid round selected', 'error')
+        return redirect(url_for('leagues'))
+    round_data = Rounds.query.get(round_id)
+    if not round_data:
+        flash('Invalid round selected', 'error')
+        return redirect(url_for('leagues'))
+    league_id = round_data.league_id
+    league = Leagues.query.get(league_id)
+    if not league:
+        flash('Invalid league selected', 'error')
+        return redirect(url_for('leagues'))
+    # verify league membership status
+    am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
+    if not am_a_member:
+        flash('Not a member of the league, you cannot view round data', 'error')
+        return redirect(url_for('leagues'))
+    songs = Songs.query.filter_by(round_id=round_id).filter_by(league_id=league_id).filter(Users.id!=user_id)
+    if not songs:
+        flash('Zero songs to vote on in this round', 'error')
+        return redirect(url_for('round_', id=round_id))
+    form = VoteForm()
+    if form.validate_on_submit():
+        pass
+    return render_template('vote.html', title='Vote for songs', songs=songs.all())
 
 
 def send_async_email(app, msg):

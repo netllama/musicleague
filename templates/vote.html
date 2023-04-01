@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            {{ render_messages() }}
+            <p><b>Vote &quot;{{ songs[0].rounds.name }}&quot;&nbsp;|&nbsp;{{ songs[0].leagues.upvotes }} Upvotes&nbsp;|&nbsp;{{ songs[0].leagues.downvotes }} Downvotes&nbsp;</b></p><br>
+            <form method="POST" action="" class="form" role="form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input id="user" name="user" required type="hidden" value="">
+                <input id="round" name="round" required type="hidden" value="">
+                <input id="league" name="league" required type="hidden" value="">
+                {% for s in songs %}
+                <table>
+                    <tr>
+                        <td>
+                            <b>{{ s.title }}</b>
+                        </td>
+                        <td>
+                            {{ s.descr }}
+                        </td>
+                    </tr>
+                     <tr>
+                        <td>
+                            <div style=overflow:hidden;resize:none;max-width:100%;>
+                            <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
+                            <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ s.video_id }}" title="YouTube video player" 
+                                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen></iframe></div></div>
+                        <td>
+                            <a href="{{ s.song_url }}"><img src="{{ s.thumbnail }}" alt="thumnail"></a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="mb-3"><label class="form-label" for="comment_{{ s.id }}"><b>Song comment</b></label>
+                                <textarea class="form-control" cols="50" id="comment_{{ s.id }}" maxlength="128" name="comment_{{ s.id }}" rows="5"></textarea>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="mb-3 required"><label class="form-label" for="upvote_{{ s.id }}"><b>Votes</b></label>
+                                <input class="form-control" id="upvote_{{ s.id }}" name="upvote_{{ s.id }}" required 
+                                    type="number" value="0" min="-{{ s.leagues.downvotes }}" max="{{ s.leagues.upvotes }}">
+                            </div>
+                        </td>
+                    </tr>
+                </table><br><br>
+                {% endfor %}
+                <br><input class="btn btn-primary btn-md" id="submit" name="submit" type="submit" value="Submit Votes">
+            </form><br>
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>

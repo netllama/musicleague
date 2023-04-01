@@ -29,6 +29,7 @@ table td {
     padding:5px;
     background: #c0bfbc;
     color: #313030;
+    vertical-align: top;
 }
 
 #wrapper {
