@@ -715,6 +715,12 @@ def make_shell_context():
     return {'db': db, 'Users': Users, 'Icons': Icons, 'Leagues': Leagues, 'LeagueMembers':LeagueMembers, 'Rounds': Rounds, 'Songs': Songs, 'Votes': Votes}
 
 
+# used to inject the current date into templates
+@app.context_processor
+def inject_today_date():
+    return {'today_date': datetime.utcnow()}
+
+
 @login_mgr.user_loader
 def load_user(user_id):
     return Users.query.get(int(user_id))
