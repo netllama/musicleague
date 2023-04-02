@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}{{ super() }}{% endblock %}
 <body>
+
     {% block nav %}
         {{ super() }}
     {% endblock %}
@@ -8,10 +9,14 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-            <p><b>Vote &quot;{{ songs[0].rounds.name }}&quot;&nbsp;|&nbsp;
-                {{ songs[0].leagues.upvotes }} Upvotes&nbsp;|&nbsp;
-                {{ songs[0].leagues.downvotes }} Downvotes&nbsp;|&nbsp;Voting&nbsp;Ends: 
-                {{ moment(songs[0].rounds.end_date).format('YYYY-MM-DD HH:mm') }}
+            <p><b>Vote</b>&nbsp;&rarr;&nbsp;
+                League&nbsp;[<b>&nbsp;<a href="{{ url_for('league') }}?id={{ songs[0].leagues.id }}">{{ songs[0].leagues.name }}</a>
+                    &nbsp;</b>]&nbsp;&rarr;&nbsp;
+                Round&nbsp;[<b>&nbsp;{{ songs[0].rounds.name }}&nbsp;</b>]
+            </p>
+            <p><b>{{ songs[0].leagues.upvotes }}</b> Total Upvotes&nbsp;|&nbsp;
+                <b>{{ songs[0].leagues.downvotes }}</b> Total Downvotes&nbsp;|&nbsp;Voting&nbsp;Ends: 
+                <b>{{ moment(songs[0].rounds.end_date).format('YYYY-MM-DD HH:mm') }}
                 </b></p><br>
             <form method="POST" action="" class="form" role="form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -31,8 +36,9 @@
                         <td>
                             <div style=overflow:hidden;resize:none;max-width:100%;>
                             <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
-                            <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ s.video_id }}" title="YouTube video player" 
-                                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ s.video_id }}" 
+                                title="YouTube video player" frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                 allowfullscreen></iframe></div></div>
                         <td>
                             <a href="{{ s.song_url }}"><img src="{{ s.thumbnail }}" alt="thumnail"></a>
@@ -41,7 +47,8 @@
                     <tr>
                         <td>
                             <div class="mb-3"><label class="form-label" for="comment-{{ s.id }}"><b>Song comment</b></label>
-                                <textarea class="form-control" cols="50" id="comment-{{ s.id }}" maxlength="128" name="comment-{{ s.id }}" rows="5"></textarea>
+                                <textarea class="form-control" cols="50" id="comment-{{ s.id }}" maxlength="128" 
+                                    name="comment-{{ s.id }}" placeholder="tell why you voted" rows="5"></textarea>
                             </div>
                         </td>
                         <td>
@@ -54,12 +61,15 @@
                 </table><br><br>
                 <input id="song" name="song" required type="hidden" value="{{ s.id }}">
                 {% endfor %}
-                <br><input class="btn btn-primary btn-md" id="submit" name="submit" type="submit" value="Submit Votes">
+                <br><button class="btn btn-primary" formmethod="post" id="submit" name="submit" type="submit" value="Submit Votes">Submit Votes</button>
             </form><br>
         {% endblock %}
         </div>
     </div></div>
     {% block footer %}
+        {{ super() }}
+    {% endblock %}
+    {% block scripts %}
         {{ super() }}
     {% endblock %}
 </body>
