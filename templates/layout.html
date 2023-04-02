@@ -15,12 +15,12 @@
         {{ moment.include_moment() }}
     {% endblock %}
     {% block nav %}
-    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="music_league_logo"><hr><br>
+    <div class="box"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="music_league_logo"></div><hr><br>
     <div id="navigation">
     <table>
 	    <tbody>
                     <tr>
-			    <td>&nbsp;<A HREF="{{ url_for('default') }}">Music Leagues</a></td>
+			    <td>&nbsp;<A HREF="{{ url_for('default') }}">Music League</a></td>
                             <td>&nbsp;<A HREF="{{ url_for('leagues') }}">Leagues</A></td>
                             {% if current_user.is_anonymous %}
 			        <td>&nbsp;<A HREF="{{ url_for('signup') }}">Signup</A></td>
@@ -40,12 +40,10 @@
         </div>
     </div></div>
     {% block footer %}
-    <div id="footerwrap">
-        <div id="footer">
-            &nbsp;Music League is a python project available on <a href="https://github.com/netllama/musicleague">Github</a>
-            &nbsp;|&nbsp;Copyright&nbsp;{{ moment(today_date).format('YYYY') }}
-        </div>
-    </div>
+    <footer>
+        &nbsp;Copyright&nbsp;{{ moment(today_date).format('YYYY') }}&nbsp;|
+            &nbsp;Music League is a <a href="https://github.com/netllama/musicleague">Github</a> project.
+    </footer>
     {% endblock %}
 </body>
 </html>

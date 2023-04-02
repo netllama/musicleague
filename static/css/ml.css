@@ -2,10 +2,21 @@
 
 @import url("reset.css");
 
-body {
+html, body {
     font-family: Verdana, Arial, Helvetica, sans-serif;
     font-size: 22px;
-    color:#333
+    color:#333;
+    margin: 0;
+    height: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.box img {
+    width: 455px;
+    height: 246px;
+    object-fit: contain;
 }
 
 p {
@@ -84,15 +95,8 @@ table td {
     margin: 5px;
 }
 
-#footerwrap {
-    width: 100%;
-    float: left;
-    margin: 0 auto;
-    clear: both;
-}
-
-#footer {
-    height: 40px;
+footer {
+    margin-top: auto;
     background: #FFB473;
     border-radius: 10px;
     border: 1px solid #eba05f;
