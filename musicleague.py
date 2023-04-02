@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
@@ -278,6 +279,12 @@ class Votes(UserMixin, db.Model):
     def __repr__(self):
         return f'<Song Id {self.song_id}\tVotes {self.votes}>'
 
+@dataclass
+class LeagueStandings():
+    name: str
+    username: str
+    votes: int = 0
+
 @app.route('/')
 @app.route('/index')
 def default():
@@ -369,6 +376,7 @@ def league():
 @login_required
 def standings():
     """View current league standings (total points for each member)."""
+    standings_data = []
     now = datetime.utcnow()
     league_id = request.args.get('id', 0, type=int)
     if league_id == 0:
@@ -378,9 +386,28 @@ def standings():
     if not league:
         flash('Invalid league selected', 'error')
         return redirect(url_for('leagues'))
-    league_status = 'ENDED' if now > league.end_date else 'RUNNING'
-    
-    return render_template('standings.html', title='View League Standings', status=league_status, end_date=league.end_date)
+    league_status = Markup('<b>ENDED</b>') if now > league.end_date else 'RUNNING'
+    league_members_data = league.members
+    votes = league.votes
+    songs = league.songs
+    for user in league_members_data:
+        name = user.user.name
+        username = user.user.username
+        user_id = user.user.id
+        user_votes = [0]
+        for song in songs:
+            if song.user_id != user_id:
+                continue
+            user_votes += [vote.votes for vote in votes if vote.song_id == song.id]
+        user_data = LeagueStandings(
+            name=name,
+            username=username,
+            votes=sum(user_votes)
+        )
+        standings_data.append(user_data)
+    # sort by total points
+    sorted_standings = sorted(standings_data, key=lambda x: x.votes)
+    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=league.end_date, data=standings_data)
 
 
 @app.route('/round', methods=['GET', 'POST'])

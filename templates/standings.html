@@ -8,7 +8,27 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-        
+            <p>League&nbsp;[<b>&nbsp;<a href="{{ url_for('league') }}?id={{ league_data.id }}">{{ league_data.name }}</a></b>&nbsp;]&nbsp;{{ status }}
+            {% if status != 'RUNNING' %}
+                &nbsp;{{ moment(end_date).fromNow() }}
+            {% endif %}
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in data %}
+                        <tr>
+                            <td><b>{{ data.name }}</b>&nbsp;[&nbsp;{{ data.username }}&nbsp;]</td>
+                            <td><b>{{ data.votes }}</b></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table><br>
         {% endblock %}
         </div>
     </div></div>
