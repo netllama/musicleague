@@ -1,7 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}{{ super() }}{% endblock %}
 <body>
-
+    {% block scripts %}
+        {{ super() }}
+    {% endblock %}
     {% block nav %}
         {{ super() }}
     {% endblock %}
@@ -53,15 +55,17 @@
                         </td>
                         <td>
                             <div class="mb-3 required"><label class="form-label" for="vote-{{ s.id }}"><b>Votes</b></label>
-                                <input class="form-control" id="vote-{{ s.id }}" name="vote-{{ s.id }}" required 
-                                    type="number" min="-{{ s.leagues.downvotes }}" max="{{ s.leagues.upvotes }}">
+                                <input class="form-control vote" id="vote-{{ s.id }}" name="vote-{{ s.id }}" required 
+                                    type="number" value="0" min="-{{ s.leagues.downvotes }}" max="{{ s.leagues.upvotes }}">
                             </div>
                         </td>
                     </tr>
                 </table><br><br>
                 <input id="song" name="song" required type="hidden" value="{{ s.id }}">
                 {% endfor %}
-                <br><button class="btn btn-primary" formmethod="post" id="submit" name="submit" type="submit" value="Submit Votes">Submit Votes</button>
+                <p><b>{{ songs[0].leagues.upvotes }}</b> Total Upvotes available&nbsp;|&nbsp;
+                    <b>{{ songs[0].leagues.downvotes }}</b> Total Downvotes available</p>
+                <button disabled class="btn btn-primary" formmethod="post" id="submit" name="submit" type="submit" value="Submit Votes">Submit Votes</button>
             </form><br>
         {% endblock %}
         </div>
@@ -69,8 +73,25 @@
     {% block footer %}
         {{ super() }}
     {% endblock %}
-    {% block scripts %}
-        {{ super() }}
+    {% block more_scripts %}
+<script>
+const sum = (acc, cur) => acc + Number.parseInt(cur.value || '0', 10);
+const loaded = () => {
+    const button = document.getElementById('submit');
+    const votes = Array.from(document.querySelectorAll('input.vote'));
+    // Initial total
+    let total = votes.reduce(sum, 0);
+    button.disabled = total < {{ songs[0].leagues.downvotes }} || total > {{ songs[0].leagues.upvotes }} || total == 0;
+    const recountVotes = () => {
+        // Easiest to just recount than work out total +/- the new value because user can backspace, etc.
+        total = votes.reduce(sum, 0);
+        // Just random total, change as required
+        button.disabled = total < {{ songs[0].leagues.downvotes }} || total > {{ songs[0].leagues.upvotes }} || total == 0;
+    }
+    votes.forEach((vote) => vote.addEventListener('input', recountVotes));
+}
+document.addEventListener('DOMContentLoaded', loaded);
+</script> 
     {% endblock %}
 </body>
 </html>
