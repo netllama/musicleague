@@ -78,12 +78,12 @@ class CreateLeagueForm(FlaskForm):
     name_max_length_msg = f'League names cannot be longer than {name_max_length} characters long'
     descr_max_length_msg = f'League descriptions cannot be longer than {descr_max_length} characters long'
     name = StringField('League Name', validators=[DataRequired(), Length(max=name_max_length, message=name_max_length_msg)])
-    submit_days = IntegerRangeField('Days to Submit', default=2, validators=[DataRequired(), NumberRange(min=1, max=30)])
-    vote_days = IntegerRangeField('Days to Vote', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
+    submit_days = IntegerField('Days to Submit', default=2, validators=[DataRequired(), NumberRange(min=1, max=30)])
+    vote_days = IntegerField('Days to Vote', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
     descr = TextAreaField('League Description', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
-    upvotes = IntegerRangeField('Total Upvotes Per Voter', default=10, validators=[DataRequired(), NumberRange(min=0, max=50)])
-    downvotes = IntegerRangeField('Total Downvotes Per Voter', default=1, validators=[DataRequired(), NumberRange(min=0, max=50)])
-    round_count = IntegerRangeField('Total Number of Rounds', default=5, validators=[DataRequired(), NumberRange(min=1, max=20)])
+    upvotes = IntegerField('Total Upvotes Per Voter', default=10, validators=[DataRequired(), NumberRange(min=0, max=50)])
+    downvotes = IntegerField('Total Downvotes Per Voter', default=1, validators=[DataRequired(), NumberRange(min=0, max=50)])
+    round_count = IntegerField('Total Number of Rounds', default=5, validators=[DataRequired(), NumberRange(min=1, max=20)])
     submit = SubmitField('Create League')
 
 class RoundsForm(FlaskForm):
@@ -691,10 +691,17 @@ def get_yt_song_data(song_url):
         return song_data
     # parse song_url
     parsed = urlparse(song_url)
-    if parsed.netloc != 'www.youtube.com':
+    if parsed.netloc not in ['www.youtube.com', 'youtu.be']:
         app.logger.info(f'Invalid song_url specified ( {song_url} )')
         return song_data
-    video_id = parsed.query.replace('v=', '')
+    # youtube has multiple domains and URL formats
+    if parsed.query:
+        video_id = parsed.query.replace('v=', '')
+    elif parsed.path.removeprefix('/'):
+        video_id = parsed.path.removeprefix('/')
+    else:
+        app.logger.warning(f'Invalid video Id specified ( {song_url} )')
+        return song_data
     try:
         data = yt.get_video_metadata(video_id)
     except TypeError as err:
