@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
@@ -285,6 +286,13 @@ class LeagueStandings():
     username: str
     votes: int = 0
 
+@dataclass
+class FinalRoundVoteData():
+    song_id: int
+    total_votes: int
+    song: Songs
+    votes: Votes
+
 @app.route('/')
 @app.route('/index')
 def default():
@@ -406,14 +414,15 @@ def standings():
         )
         standings_data.append(user_data)
     # sort by total points
-    sorted_standings = sorted(standings_data, key=lambda x: x.votes)
-    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=league.end_date, data=standings_data)
+    sorted_standings = sorted(standings_data, key=lambda x: x.votes, reverse=True)
+    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=league.end_date, data=sorted_standings)
 
 
 @app.route('/round', methods=['GET', 'POST'])
 @login_required
 def round_():
     """Round details."""
+    votes = None
     user_id = current_user.get_id()
     round_id = request.args.get('id', 0, type=int)
     if round_id == 0:
@@ -434,24 +443,52 @@ def round_():
         flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
     round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_id)
+    final_round_vote_data = []
     if round_status == 0:
-        # ended
-        songs = Songs.query.filter_by(league_id=league_id).filter_by(round_id=round_id).order_by(Songs.id)
-        votes = Votes.query.filter_by(league_id=league_id).filter_by(round_id=round_id).order_by(Votes.vote_date)
+        # round has ended
+        songs_data = {}
+        songs = round_data.songs
+        # key data by song id
+        for song in round_data.songs:
+            songs_data[song.id] = song
+        votes = round_data.votes
+        # tally up the votes per song
+        vote_count_data = defaultdict(list)
+        for vote in round_data.votes:
+            vote_count_data[vote.song_id].append(vote.votes)
+        # collect per user vote data
+        vote_data = defaultdict(list)
+        for vote in round_data.votes:
+            vote_data[vote.song_id].append(vote)
+        sorted_vote_data = {}
+        for song_id, votes_data in vote_data.items():
+            sorted_vote_data[song_id] = sorted(votes_data, key=lambda x: x.votes, reverse=True)
+        # generate final data structure, sorted by total vote count
+        # sort by total votes
+        sorted_vote_count_data = dict(sorted(vote_count_data.items(), key=lambda x: sum(x[1]), reverse=True))
+        for song_id, votes in sorted_vote_count_data.items():
+            total_votes = sum(votes)
+            round_vote_count_data = FinalRoundVoteData(
+                song_id=song_id,
+                total_votes=total_votes,
+                song=songs_data[song_id],
+                votes=sorted_vote_data[song_id],
+            )
+            final_round_vote_data.append(round_vote_count_data)
     elif round_status == 1:
-        # vote
+        # vote now
         return redirect(url_for('vote', id=round_id))
     elif round_status == 2:
-        # submit song
+        # submit song now
         return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
     elif round_status in [3, 4]:
-        # already submitted or already voted
+        # user has already submitted or already voted
         pass
     else:
-        # not started, or invalid status provided
+        # round is not started, or invalid status provided
         flash('The selected round has not yet started', 'error')
         return redirect(url_for('league', id=league_id))
-    return render_template('round.html', title='View Round', status=round_status, round_data=round_data)
+    return render_template('round.html', title='View Round', status=round_status, round_data=round_data, final_vote_data=final_round_vote_data)
 
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -551,13 +588,13 @@ def submit_song():
         return redirect(url_for('leagues'))
     form = SubmitSongForm(user=user_id, round=round_id, league=league_id)
     if form.validate_on_submit():
-        songs = Songs.query.filter_by(round_id=round_id).filter_by(song_url=form.song_url.data).first()
-        if songs:
-            flash(f'Someone else has already submitted this song ( {form.song_url.data} )')
-            return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
         song_data = get_yt_song_data(form.song_url.data)
         if not song_data:
             flash(f'Invalid youtube song link ( {form.song_url.data} )')
+            return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
+        songs = Songs.query.filter_by(round_id=round_id).filter_by(video_id=song_data['video_id']).first()
+        if songs:
+            flash(f'Someone else has already submitted this song ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
         new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data, video_id=song_data['video_id'], title=song_data['title'], thumbnail=song_data['thumbnail'])
         db.session.add(new_song)

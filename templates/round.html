@@ -10,6 +10,63 @@
             {{ render_messages() }}
             <p>League:&nbsp;<a href="{{ url_for('league') }}?id={{ round_data.leagues.id }}"><b>{{ round_data.leagues.name }}</b></a>&nbsp;|&nbsp;Round:&nbsp;<b>{{ round_data.name }}</b></p>
             <p>{{ round_data.descr }}</p>
+            {% if status == 0 %}
+                <table width="100%">
+                    <thead>
+                        <tr>
+                            <th width="7%">Rank</th>
+                            <th width="60%">Song</th>
+                            <th>Submitted By</th>
+                            <th width="11%">Total Votes</th>
+                        </tr>
+                    </thead>
+                </table>
+                {% for vote_data in final_vote_data %}
+                    <table width="100%">
+                    <tr>
+                        <td width="7%">{{ loop.index }}
+                            {% if loop.index == 1 %}
+                                <img width="55" height="55" src="{{ url_for('static', filename='images/emojoine_r.svg') }}" alt="huzzah!">
+                            {% endif %}
+                        </td>
+                        <td width="60%">{{ vote_data.song.title }}<br>
+                            <div style=overflow:hidden;resize:none;max-width:100%;>
+                            <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
+                            <iframe width="374" height="210" src="https://www.youtube-nocookie.com/embed/{{ vote_data.song.video_id }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div>
+                        </td>
+                        <td>{{ vote_data.song.user.name }}<br>(&nbsp;{{ vote_data.song.user.username }}&nbsp;)</td>
+                        <td width="11%">{{ vote_data.total_votes }}
+                            {% if loop.index == 1 %}
+                                <img width="55" height="55" style="transform:rotate(270deg);" src="{{ url_for('static', filename='images/emojoine_r.svg') }}" alt="huzzah!">
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td colspan="3">
+                            <table width="100%">
+                                <thead>
+                                    <tr>
+                                        <th>Voter</th>
+                                        <th>Comment</th>
+                                        <th>Votes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for vote in vote_data.votes %}
+                                    <tr>
+                                        <td>{{ vote.user.name }}</td>
+                                        <td>{{ vote.comment }}</td>
+                                        <td>{{ vote.votes }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                    <tr>
+                    </table><br>
+                {% endfor %}
+            {% else %}
                 {% for song_data in round_data.songs %}
                 <table>
                     <tr>
@@ -24,8 +81,7 @@
                     </tr>
                 </table><br><br>
                 {% endfor %}
-            </tbody>
-            </table>
+            {% endif %}
         {% endblock %}
         </div>
     </div></div>

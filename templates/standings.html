@@ -24,7 +24,11 @@
                     {% for data in data %}
                         <tr>
                             <td><b>{{ data.name }}</b>&nbsp;[&nbsp;{{ data.username }}&nbsp;]</td>
-                            <td><b>{{ data.votes }}</b></td>
+                            <td><b>{{ data.votes }}</b>
+                            {% if loop.index == 1 %}
+                                <img width="45" height="45" src="{{ url_for('static', filename='images/emojoine_r.svg') }}" alt="huzzah!">
+                            {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
