@@ -31,6 +31,9 @@ ADMIN_EMAIL=            # The music league admin's email address (should be asso
 YT_API_KEY=             # Required for processing youtube video URLs. This API key which grants access to Google's Youtube service ( also see https://developers.google.com/youtube/registering_an_application ).
 ```
 5. Start up the app locally by running `FLASK_DEBUG=0 flask run` and you should be able to connect to http://127.0.0.1:5000 to test drive everything.
-6. Once you are confident that everything is working as expected, move the app behind a real, production quality, secure web server (nginx, apache, etc) and run as some sort of WSGI service (such as gunicorn). Do not expose the app to the internet using the developer Flask built-in web server (port 5000 from the previous step), as it cannot handle concurrent requests, and is insecure.
+6. Once you are confident that everything is working as expected, move the app behind a real, production quality, secure web server (nginx, apache, etc) and run as some sort of WSGI service (such as gunicorn).
+    - Do not expose the app to the internet using the developer Flask built-in web server (port 5000 from the previous step), as it cannot handle concurrent requests, and is insecure.
+    - If you want to use gunicorn, then add it to the virtenv with `pip install gunicorn` and run as `gunicorn -b localhost:5000 -w 1 run:app`
+        - Note this will run via port 5000 on localhost, and only spawn a single thread. Adjust as appropriate for your needs and environment.
 
 This project is **not** associated and **not** affiliated with 'Music League' ( https://musicleague.com ) in any way.

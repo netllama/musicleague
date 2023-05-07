@@ -6,6 +6,7 @@ from logging.handlers import RotatingFileHandler, SMTPHandler
 import os
 from threading import Thread
 
+from dotenv import load_dotenv
 from flask import Flask, flash, Markup, render_template, redirect, request, url_for
 from flask_bootstrap import Bootstrap5
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
@@ -25,6 +26,8 @@ import youtube_api
 
 
 class Config(object):
+    load_dotenv('.flaskenv')
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     DB_USER = os.environ.get('PG_USER')
     DB_PASSWD = os.environ.get('PG_PASSWD')
     DB_URL = f'postgresql://{DB_USER}:{DB_PASSWD}@localhost:5432/ml'
@@ -121,8 +124,8 @@ class VoteForm(FlaskForm):
 
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.environ.get('SECRET_KEY')
 app.config.from_object(Config)
+app.secret_key = app.config['SECRET_KEY']
 bootstrap = Bootstrap5(app)
 csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
@@ -782,4 +785,4 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(load_dotenv=True)
