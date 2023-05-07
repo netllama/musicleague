@@ -6,8 +6,10 @@ flask-mail
 flask-moment
 Flask-SQLAlchemy
 Flask-WTF
+gunicorn
 psycopg2
 python-dotenv
+setproctitle
 SQLAlchemy
 WTForms
 youtube-data-api
