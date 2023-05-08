@@ -55,7 +55,7 @@ ALTER SEQUENCE public.icons_id_seq OWNED BY public.icons.id;
 
 
 --
--- Name: league_members; Type: TABLE; Schema: public; Owner: netllama
+-- Name: league_members; Type: TABLE; Schema: public; Owner: ml
 --
 
 CREATE TABLE public.league_members (
@@ -65,10 +65,10 @@ CREATE TABLE public.league_members (
 );
 
 
-ALTER TABLE public.league_members OWNER TO netllama;
+ALTER TABLE public.league_members OWNER TO ml;
 
 --
--- Name: league_members_id_seq; Type: SEQUENCE; Schema: public; Owner: netllama
+-- Name: league_members_id_seq; Type: SEQUENCE; Schema: public; Owner: ml
 --
 
 CREATE SEQUENCE public.league_members_id_seq
@@ -80,10 +80,10 @@ CREATE SEQUENCE public.league_members_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.league_members_id_seq OWNER TO netllama;
+ALTER TABLE public.league_members_id_seq OWNER TO ml;
 
 --
--- Name: league_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: netllama
+-- Name: league_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ml
 --
 
 ALTER SEQUENCE public.league_members_id_seq OWNED BY public.league_members.id;
@@ -298,7 +298,7 @@ ALTER TABLE ONLY public.icons ALTER COLUMN id SET DEFAULT nextval('public.icons_
 
 
 --
--- Name: league_members id; Type: DEFAULT; Schema: public; Owner: netllama
+-- Name: league_members id; Type: DEFAULT; Schema: public; Owner: ml
 --
 
 ALTER TABLE ONLY public.league_members ALTER COLUMN id SET DEFAULT nextval('public.league_members_id_seq'::regclass);
@@ -348,7 +348,7 @@ ALTER TABLE ONLY public.icons
 
 
 --
--- Name: league_members league_members_pkey; Type: CONSTRAINT; Schema: public; Owner: netllama
+-- Name: league_members league_members_pkey; Type: CONSTRAINT; Schema: public; Owner: ml
 --
 
 ALTER TABLE ONLY public.league_members
@@ -436,7 +436,7 @@ ALTER TABLE ONLY public.rounds
 
 
 --
--- Name: league_members fk_league_id; Type: FK CONSTRAINT; Schema: public; Owner: netllama
+-- Name: league_members fk_league_id; Type: FK CONSTRAINT; Schema: public; Owner: ml
 --
 
 ALTER TABLE ONLY public.league_members
@@ -484,7 +484,7 @@ ALTER TABLE ONLY public.votes
 
 
 --
--- Name: league_members fk_user_id; Type: FK CONSTRAINT; Schema: public; Owner: netllama
+-- Name: league_members fk_user_id; Type: FK CONSTRAINT; Schema: public; Owner: ml
 --
 
 ALTER TABLE ONLY public.league_members
@@ -500,14 +500,14 @@ ALTER TABLE ONLY public.songs
 
 
 --
--- Name: TABLE league_members; Type: ACL; Schema: public; Owner: netllama
+-- Name: TABLE league_members; Type: ACL; Schema: public; Owner: ml
 --
 
 GRANT ALL ON TABLE public.league_members TO ml;
 
 
 --
--- Name: SEQUENCE league_members_id_seq; Type: ACL; Schema: public; Owner: netllama
+-- Name: SEQUENCE league_members_id_seq; Type: ACL; Schema: public; Owner: ml
 --
 
 GRANT ALL ON SEQUENCE public.league_members_id_seq TO ml;
