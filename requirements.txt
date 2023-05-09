@@ -9,6 +9,7 @@ Flask-WTF
 gunicorn
 psycopg2
 python-dotenv
+randimage
 setproctitle
 SQLAlchemy
 WTForms
