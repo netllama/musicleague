@@ -86,7 +86,7 @@ class CreateLeagueForm(FlaskForm):
     name = StringField('League Name', validators=[DataRequired(), Length(max=name_max_length, message=name_max_length_msg)])
     submit_days = IntegerField('Days to Submit', default=2, validators=[DataRequired(), NumberRange(min=1, max=30)])
     vote_days = IntegerField('Days to Vote', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
-    descr = TextAreaField('League Description', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
+    descr = TextAreaField('League Description', render_kw={"rows": 3, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
     upvotes = IntegerField('Total Upvotes Per Voter', default=10, validators=[DataRequired(), NumberRange(min=0, max=50)])
     downvotes = IntegerField('Total Downvotes Per Voter', default=1, validators=[DataRequired(), NumberRange(min=0, max=50)])
     round_count = IntegerField('Total Number of Rounds', default=5, validators=[DataRequired(), NumberRange(min=1, max=20)])
