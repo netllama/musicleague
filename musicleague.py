@@ -111,7 +111,7 @@ class SubmitSongForm(FlaskForm):
     round = HiddenField('round_id', validators=[DataRequired()])
     league = HiddenField('league_id', validators=[DataRequired()])
     song_url = URLField('Youtube song link', validators=[DataRequired()])
-    descr = TextAreaField('Song description', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
+    descr = TextAreaField('Song description', render_kw={"rows": 3, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
     submit = SubmitField('Submit Song')
 
 class VoteForm(FlaskForm):
@@ -121,7 +121,7 @@ class VoteForm(FlaskForm):
     league = HiddenField('league_id', validators=[DataRequired()])
     song = HiddenField('song_id', validators=[DataRequired()])
     vote = IntegerField('vote', default=0, validators=[DataRequired()])
-    comment = TextAreaField('Song comment', render_kw={"rows": 30, "cols": 50}, validators=[Optional(), Length(max=comment_max_length, message=comment_max_length_msg)])
+    comment = TextAreaField('Song comment', render_kw={"rows": 3, "cols": 50}, validators=[Optional(), Length(max=comment_max_length, message=comment_max_length_msg)])
     submit = SubmitField('Submit Votes')
 
 
