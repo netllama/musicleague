@@ -30,7 +30,8 @@ class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY')
     DB_USER = os.environ.get('PG_USER')
     DB_PASSWD = os.environ.get('PG_PASSWD')
-    DB_URL = f'postgresql://{DB_USER}:{DB_PASSWD}@localhost:5432/ml'
+    DB_NAME = os.environ.get('DB_NAME')
+    DB_URL = f'postgresql://{DB_USER}:{DB_PASSWD}@localhost:5432/{DB_NAME}'
     SQLALCHEMY_DATABASE_URI = DB_URL
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
@@ -42,6 +43,7 @@ class Config(object):
     SONGS_PER_PAGE = 10
     USERS_PER_PAGE = 20
     YT_API_KEY = os.environ.get('YT_API_KEY')
+    APP_WEB_PATH = os.environ.get('APP_WEB_PATH')
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -296,14 +298,14 @@ class FinalRoundVoteData():
     song: Songs
     votes: Votes
 
-@app.route('/')
-@app.route('/index')
+@app.route(f"{app.config['APP_WEB_PATH']}/")
+@app.route(f"{app.config['APP_WEB_PATH']}/index")
 def default():
     content = 'ML Content!'
     return render_template('index.html', title="CPU Music League", content=content)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('default'))
@@ -321,7 +323,7 @@ def login():
     return render_template('login.html', title='Sign In', form=form)
 
 
-@app.route('/leagues', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/leagues", methods=['GET', 'POST'])
 def leagues():
     """View/Create a new league."""
     page = request.args.get('page', 1, type=int)
@@ -331,7 +333,7 @@ def leagues():
     return render_template('leagues.html', title='View / Create Music Leagues', leagues=leagues.items, next_url=next_url, prev_url=prev_url)
 
 
-@app.route('/league', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/league", methods=['GET', 'POST'])
 def league():
     """View/Join a league."""
     now = datetime.utcnow()
@@ -383,7 +385,7 @@ def league():
     return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, status=league_status, button=add_button, member=am_a_member, actions=actions)
 
 
-@app.route('/standings', methods=['GET'])
+@app.route(f"{app.config['APP_WEB_PATH']}/standings", methods=['GET'])
 @login_required
 def standings():
     """View current league standings (total points for each member)."""
@@ -421,7 +423,7 @@ def standings():
     return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=league.end_date, data=sorted_standings)
 
 
-@app.route('/round', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/round", methods=['GET', 'POST'])
 @login_required
 def round_():
     """Round details."""
@@ -494,7 +496,7 @@ def round_():
     return render_template('round.html', title='View Round', status=round_status, round_data=round_data, final_vote_data=final_round_vote_data)
 
 
-@app.route('/create', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/create", methods=['GET', 'POST'])
 @login_required
 def create():
     """Create a new league."""
@@ -514,7 +516,7 @@ def create():
     return render_template('create.html', title='Create a new Music League', form=form)
 
 
-@app.route('/add_rounds', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/add_rounds", methods=['GET', 'POST'])
 @login_required
 def add_rounds():
     """Add rounds to the new league."""
@@ -539,7 +541,7 @@ def add_rounds():
     return render_template('create_rounds.html', title='Add rounds to this league', form=form, id=league_id, count=round_count)
 
 
-@app.route('/users', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/users", methods=['GET', 'POST'])
 @login_required
 def users():
     """List registered members/users."""
@@ -550,14 +552,14 @@ def users():
     return render_template('members.html', title='Music League Members', users=users.items, next_url=next_url, prev_url=prev_url)
 
 
-@app.route('/logout')
+@app.route(f"{app.config['APP_WEB_PATH']}/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('default'))
 
 
-@app.route('/signup', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/signup", methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
         return redirect(url_for('default'))
@@ -572,7 +574,7 @@ def signup():
     return render_template('signup.html', title="CPU Music League Sign Up", form=form)
 
 
-@app.route('/submit', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/submit", methods=['GET', 'POST'])
 @login_required
 def submit_song():
     """Submit a song to a round."""
@@ -607,7 +609,7 @@ def submit_song():
     return render_template('submit.html', title='Submit a Song', form=form)
 
 
-@app.route('/vote', methods=['GET', 'POST'])
+@app.route(f"{app.config['APP_WEB_PATH']}/vote", methods=['GET', 'POST'])
 @login_required
 def vote():
     """Vote for songs in the league/round."""
