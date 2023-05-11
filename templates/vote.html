@@ -27,7 +27,7 @@
                 {% for s in songs %}
                 <table id="song-{{ s.id }}">
                     <tr>
-                        <td>
+                        <td><a href="{{ s.song_url }}"><img width="80" height="60" src="{{ s.thumbnail }}" alt="thumnail"></a>
                             <b>{{ s.title }}</b>
                         </td>
                         <td>
@@ -35,15 +35,13 @@
                         </td>
                     </tr>
                      <tr>
-                        <td>
+                        <td colspan="2" style="text-align:center;">
                             <div style=overflow:hidden;resize:none;max-width:100%;>
                             <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
                             <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ s.video_id }}" 
                                 title="YouTube video player" frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                 allowfullscreen></iframe></div></div>
-                        <td>
-                            <a href="{{ s.song_url }}"><img src="{{ s.thumbnail }}" alt="thumnail"></a>
                         </td>
                     </tr>
                     <tr>
