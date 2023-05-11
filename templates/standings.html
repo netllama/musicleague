@@ -11,6 +11,8 @@
             <p>League&nbsp;[<b>&nbsp;<a href="{{ url_for('league') }}?id={{ league_data.id }}">{{ league_data.name }}</a></b>&nbsp;]&nbsp;{{ status }}
             {% if status != 'RUNNING' %}
                 &nbsp;{{ moment(end_date).fromNow() }}
+            {% else %}
+                <br>Currently running round {{ round_status_data['current_round_number'] }} of {{ round_status_data['round_count'] }}, which ends {{ moment(end_date).fromNow() }}.
             {% endif %}
             </p>
             <table>

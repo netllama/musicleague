@@ -399,7 +399,21 @@ def standings():
     if not league:
         flash('Invalid league selected', 'error')
         return redirect(url_for('leagues'))
-    league_status = Markup('<b>ENDED</b>') if now > league.end_date else 'RUNNING'
+    round_count = len(league.rounds)
+    if now > league.end_date:
+        # ended
+        league_status = Markup('<b>ENDED</b>')
+        finished_round_count = len(league.rounds)
+        current_round_number = finished_round_count
+        reporting_tstamp = league.end_date
+    else:
+        # in progress
+        league_status = 'RUNNING'
+        finished_round_count = len([r for r in league.rounds if r.end_date < now])
+        unfinished_round_time = min([r.end_date for r in league.rounds if r.end_date >= now])
+        reporting_tstamp = unfinished_round_time
+        current_round_number = finished_round_count + 1
+    round_status_data = {'current_round_number': current_round_number, 'round_count': round_count}
     league_members_data = league.members
     votes = league.votes
     songs = league.songs
@@ -420,7 +434,7 @@ def standings():
         standings_data.append(user_data)
     # sort by total points
     sorted_standings = sorted(standings_data, key=lambda x: x.votes, reverse=True)
-    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=league.end_date, data=sorted_standings)
+    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=reporting_tstamp, data=sorted_standings, round_status_data=round_status_data)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/round", methods=['GET', 'POST'])
