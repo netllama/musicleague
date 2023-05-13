@@ -26,6 +26,7 @@ import youtube_api
 
 
 class Config(object):
+    db_engine_options = {'pool_pre_ping': True, 'pool_size': 6, 'pool_recycle': 3600}
     load_dotenv('.flaskenv')
     SECRET_KEY = os.environ.get('SECRET_KEY')
     DB_USER = os.environ.get('PG_USER')
@@ -33,6 +34,7 @@ class Config(object):
     DB_NAME = os.environ.get('DB_NAME')
     DB_URL = f'postgresql://{DB_USER}:{DB_PASSWD}@localhost:5432/{DB_NAME}'
     SQLALCHEMY_DATABASE_URI = DB_URL
+    SQLALCHEMY_ENGINE_OPTIONS = db_engine_options
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
