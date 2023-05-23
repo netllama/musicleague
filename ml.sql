@@ -88,6 +88,7 @@ ALTER TABLE public.league_members_id_seq OWNER TO ml;
 
 ALTER SEQUENCE public.league_members_id_seq OWNED BY public.league_members.id;
 
+CREATE unique index user_league_id ON league_members(league_id, user_id);
 
 --
 -- Name: leagues; Type: TABLE; Schema: public; Owner: ml
