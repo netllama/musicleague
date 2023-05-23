@@ -17,6 +17,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
 from randimage import get_random_image
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from urllib.parse import urlparse
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.urls import url_parse
@@ -232,6 +233,7 @@ class LeagueMembers(UserMixin, db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     user = db.relationship('Users', back_populates='members')
     leagues = db.relationship('Leagues', back_populates='members')
+    __table_args__ = ( db.UniqueConstraint(league_id, user_id), )
 
     def __repr__(self):
         return f'<League Id {self.league_id}\tUser Id {self.user_id}>'
@@ -357,7 +359,12 @@ def league():
         if request.method == 'GET' and request.args.get('submit', None):
             member = LeagueMembers(league_id=league_id, user_id=user_id)
             db.session.add(member)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except IntegrityError as err:
+                app.logger.warning(f'User {user_id} attempted to join league {league_id} more than once:\t{err}')
+                flash('You cannot join a league more than once', 'error')
+                return redirect(url_for('leagues'))
             flash("You've been added to this league successfully. Start submitting to the next open round.")
         else:
             join_cut_off_date = league.end_date - timedelta(days=league.vote_days)
@@ -777,7 +784,7 @@ def get_yt_song_data(song_url):
 # used by 'flask shell' to setup query context
 @app.shell_context_processor
 def make_shell_context():
-    return {'db': db, 'Users': Users, 'Icons': Icons, 'Leagues': Leagues, 'LeagueMembers':LeagueMembers, 'Rounds': Rounds, 'Songs': Songs, 'Votes': Votes}
+    return {'db': db, 'Users': Users, 'Icons': Icons, 'Leagues': Leagues, 'LeagueMembers': LeagueMembers, 'Rounds': Rounds, 'Songs': Songs, 'Votes': Votes}
 
 
 # used to inject the current date into templates
