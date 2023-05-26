@@ -142,7 +142,10 @@ CREATE TABLE public.rounds (
     league_id integer NOT NULL,
     name text NOT NULL,
     descr text NOT NULL,
-    end_date timestamp without time zone DEFAULT now() NOT NULL
+    end_date timestamp without time zone DEFAULT now() NOT NULL,
+    submit_email boolean DEFAULT 'false' NOT NULL
+    vote_email boolean DEFAULT 'false' NOT NULL
+    end_email boolean DEFAULT 'false' NOT NULL
 );
 
 

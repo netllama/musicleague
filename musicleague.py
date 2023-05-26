@@ -245,6 +245,9 @@ class Rounds(UserMixin, db.Model):
     name = db.Column(db.String(92))
     descr = db.Column(db.String(128))
     end_date = db.Column(db.DateTime)
+    submit_email = db.Column(db.Boolean)
+    vote_email = db.Column(db.Boolean)
+    end_email = db.Column(db.Boolean)
     leagues = db.relationship('Leagues', back_populates='rounds')
     songs = db.relationship('Songs', back_populates='rounds')
     votes = db.relationship('Votes', back_populates='rounds')
@@ -555,7 +558,7 @@ def add_rounds():
         for day, round_data in enumerate(form.data['rounds'], start=1):
             days = round_days * day
             end_date = now + timedelta(days=days)
-            round_record = Rounds(league_id=league_id, name=round_data['name'], descr=round_data['descr'], end_date=end_date)
+            round_record = Rounds(league_id=league_id, name=round_data['name'], descr=round_data['descr'], end_date=end_date, submit_email=False, vote_email=False, end_email=False)
             db.session.add(round_record)
         db.session.commit()
         flash_msg = Markup(f'{round_count} rounds added to your league')
