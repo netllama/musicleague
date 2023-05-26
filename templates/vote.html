@@ -79,12 +79,12 @@ const loaded = () => {
     const votes = Array.from(document.querySelectorAll('input.vote'));
     // Initial total
     let total = votes.reduce(sum, 0);
-    button.disabled = total < {{ songs[0].leagues.downvotes }} || total > {{ songs[0].leagues.upvotes }} || total == 0;
+    button.disabled = total != {{ votes }};
     const recountVotes = () => {
         // Easiest to just recount than work out total +/- the new value because user can backspace, etc.
         total = votes.reduce(sum, 0);
         // Just random total, change as required
-        button.disabled = total < {{ songs[0].leagues.downvotes }} || total > {{ songs[0].leagues.upvotes }} || total == 0;
+        button.disabled = total != {{ votes }};
     }
     votes.forEach((vote) => vote.addEventListener('input', recountVotes));
 }

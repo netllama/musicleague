@@ -663,24 +663,25 @@ def vote():
         flash('Zero songs to vote on in this round', 'error')
         return redirect(url_for('round_', id=round_id))
     form = VoteForm()
+    expected_total_votes = league.upvotes - league.downvotes
     if request.method == 'POST' and form.is_submitted():
-        total_votes = 0
+        actual_total_votes = 0
         song_ids = [i.id for i in songs.all()]
         for song_id in song_ids:
             votes = request.form.get(f'vote-{song_id}', type=int)
-            total_votes += votes
+            actual_total_votes += votes
             comment = request.form.get(f'comment-{song_id}', '')
             vote = Votes(song_id=song_id, league_id=league_id, round_id=round_id, user_id=user_id, votes=votes, comment=comment)
             db.session.add(vote)
-        if total_votes > league.upvotes or total_votes < -abs(league.downvotes):
+        if actual_total_votes != expected_total_votes:
             # enforce per round vote count limits
             db.session.rollback()
-            flash(f'Total votes must not be greater than {league.upvotes} or less than -{league.downvotes}', 'error')
+            flash(f'Total votes (up plus down) must equal {expected_total_votes}', 'error')
         else:    
             db.session.commit()
             flash(f'Thanks for voting in round: {round_data.name}')
         return redirect(url_for('round_', id=round_id))
-    return render_template('vote.html', title='Vote for songs', songs=songs.all())
+    return render_template('vote.html', title='Vote for songs', songs=songs.all(), votes=expected_total_votes)
 
 
 def send_async_email(app, msg):
