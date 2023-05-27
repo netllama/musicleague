@@ -9,7 +9,7 @@
         {% block content %}
             {{ render_messages() }}
             {% if current_user.is_authenticated %}
-                <p><a href="{{ url_for('create') }}">&rarr;&nbsp;Create a new league&nbsp;&larr;</a></p>
+                <p><a class="btn btn-primary btn-md" href="{{ url_for('create') }}">&rarr;&nbsp;Create a new league&nbsp;&larr;</a></p>
             {% endif %}
             <p><b>Music Leagues:</b></p><BR>
             <table>
