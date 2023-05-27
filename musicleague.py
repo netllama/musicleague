@@ -688,9 +688,9 @@ def vote():
         flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
     songs = Songs.query.filter_by(round_id=round_id).filter_by(league_id=league_id).filter(Users.id!=user_id)
-    if not songs:
+    if not songs.all():
         flash('Zero songs to vote on in this round', 'error')
-        return redirect(url_for('round_', id=round_id))
+        return redirect(url_for('league', id=league_id))
     form = VoteForm()
     expected_total_votes = league.upvotes - league.downvotes
     if request.method == 'POST' and form.is_submitted():
