@@ -377,23 +377,28 @@ def league():
         add_button = False if am_a_member or too_late else True
         if am_a_member:
             for round_data in rounds:
+                round_uri = f'''<a href="{url_for('round_')}?id={round_data.id}">'''
                 round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_data.id)
                 if round_status == 0:
-                    action = 'ENDED'
+                    action_str = f'{round_uri}ENDED</a>'
                 elif round_status == 1:
-                    action = Markup('<b>VOTE&nbsp;NOW</b>')
+                    action_str = f'{round_uri}<b>VOTE&nbsp;NOW</b></a>'
                 elif round_status == 2:
-                    action = Markup('<b>SUBMIT&nbsp;NOW</b>')
+                    round_uri = f'''<a href="{url_for('round_')}?id={round_data.id}&edit=1">'''
+                    action_str = f'{round_uri}<b>SUBMIT&nbsp;NOW</b></a>'
                 elif round_status == 3:
-                    # submitted already
-                    action = Markup('<b>YOU SUBMITTED</b>')
+                    # submitted already, can edit
+                    round_uri = f'''<a href="{url_for('round_')}?id={round_data.id}&edit=0">'''
+                    edit_uri = f'''<a href="{url_for('round_')}?id={round_data.id}&edit=1">'''
+                    action_str = f'{round_uri}<b>YOU SUBMITTED</b></a>'
+                    action_str += f'&nbsp;&lbrack;&nbsp;{edit_uri}EDIT</a>&nbsp;&rbrack;'
                 elif round_status == 4:
                     # voted already
-                    action = Markup('<b>YOU VOTED</b>')
+                    action_str = f'{round_uri}<b>YOU VOTED</b></a>'
                 else:
                     # -1
-                    action = Markup('NOT&nbsp;STARTED')
-                actions[round_data.id] = action
+                    action_str = f'{round_uri}NOT&nbsp;STARTED</a>'
+                actions[round_data.id] = Markup(action_str)
     return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, status=league_status, button=add_button, member=am_a_member, actions=actions)
 
 
@@ -474,6 +479,7 @@ def round_():
         flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
     round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_id)
+    edit_round = request.args.get('edit', 0, type=int)
     final_round_vote_data = []
     if round_status == 0:
         # round has ended
@@ -511,9 +517,15 @@ def round_():
         return redirect(url_for('vote', id=round_id))
     elif round_status == 2:
         # submit song now
-        return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
-    elif round_status in [3, 4]:
-        # user has already submitted or already voted
+        return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id, can_edit=edit_round))
+    elif round_status == 3:
+        # user has already submitted, can edit submission
+        if edit_round:
+            return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id, can_edit=edit_round))
+        else:
+            pass
+    elif round_status == 4:
+        # user has already voted
         pass
     else:
         # round is not started, or invalid status provided
@@ -604,6 +616,10 @@ def signup():
 @login_required
 def submit_song():
     """Submit a song to a round."""
+    song_url = ''
+    song_descr = ''
+    song_title = ''
+    editing = False  # whether the song submission is being edited (already submitted)
     user_id = current_user.get_id()
     user__id = request.args.get('user', 0, type=int)
     if int(user_id) != user__id:
@@ -617,22 +633,35 @@ def submit_song():
     if league_id == 0:
         flash('Invalid round selected', 'error')
         return redirect(url_for('leagues'))
+    edit = request.args.get('can_edit', 0, type=int)
+    song = Songs.query.filter_by(user_id=user_id).filter_by(round_id=round_id).first()
+    if song:
+        song_url = song.song_url
+        song_descr = song.descr
+        song_title = song.title
+        editing = True
     form = SubmitSongForm(user=user_id, round=round_id, league=league_id)
     if form.validate_on_submit():
         song_data = get_yt_song_data(form.song_url.data)
         if not song_data:
             flash(f'Invalid youtube song link ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
-        songs = Songs.query.filter_by(round_id=round_id).filter_by(video_id=song_data['video_id']).first()
+        songs = Songs.query.filter_by(round_id=round_id).filter_by(video_id=song_data['video_id']).filter(Songs.user_id!=user_id).first()
         if songs:
             flash(f'Someone else has already submitted this song ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
-        new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data, video_id=song_data['video_id'], title=song_data['title'], thumbnail=song_data['thumbnail'])
-        db.session.add(new_song)
+        if editing:
+            song.song_url = form.song_url.data
+            song.descr = form.descr.data
+            song_change_str = 'updating'
+        else:
+            new_song = Songs(league_id=league_id, user_id=user_id, round_id=round_id, song_url=form.song_url.data, descr=form.descr.data, video_id=song_data['video_id'], title=song_data['title'], thumbnail=song_data['thumbnail'])
+            db.session.add(new_song)
+            song_change_str = 'submitting'
         db.session.commit()
-        flash(f"Thanks for submitting the song ( {song_data['title']} ) for this round")
-        return redirect(url_for('round_', id=round_id))
-    return render_template('submit.html', title='Submit a Song', form=form)
+        flash(f"Thanks for {song_change_str} the song ( {song_data['title']} ) for this round")
+        return redirect(url_for('round_', id=round_id, edit=0))
+    return render_template('submit.html', title='Submit a Song', form=form, song_url=song_url, song_descr=song_descr, song_title=song_title)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/vote", methods=['GET', 'POST'])

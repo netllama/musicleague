@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from 'bootstrap5/form.html' import render_field %}
 {% block title %}{{ super() }}{% endblock %}
 <body>
     {% block nav %}
@@ -8,8 +9,21 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-            <p><b>Submit your song</b></p><br>
-            {{ render_form(form) }}
+            <p><b>
+            {% if song_url %}
+                Edit&nbsp;your song</b>&nbsp;&lbrack;&nbsp;{{ song_title }}&nbsp;&rbrack;</p>
+            {% else %}
+                Submit&nbsp;your song</b></p>
+            {% endif %}
+            <form action="" method="post" class="form" role="form">
+                {{ form.csrf_token() }}
+                {{ render_field(form.user) }}
+                {{ render_field(form.round) }}
+                {{ render_field(form.league) }}
+                {{ render_field(form.song_url, value=song_url) }}
+                {{ render_field(form.descr, placeholder=song_descr) }}
+                {{ render_field(form.submit) }}
+            </form>
         {% endblock %}
         </div>
     </div></div>

@@ -75,7 +75,7 @@
                         <td>{{ data.descr }}</td>
                         <td>{{ moment(data.end_date).format('YYYY-MM-DD HH:mm') }}</td>
                         {% if current_user.is_authenticated and member %}
-                            <td><a href="{{ url_for('round_') }}?id={{ data.id }}">{{ actions[data.id] }}</a></td>
+                            <td>{{ actions[data.id] }}</td>
                         {% endif %}
                     </tr>
                 {% endfor %}
