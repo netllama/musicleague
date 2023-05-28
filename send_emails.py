@@ -25,22 +25,19 @@ class EmailStateData():
 
 def make_emails():
     """Find rounds that are ready for submission, voting or ended, and send out notification emails."""
-    base_url = f"{app.config['PREFERRED_URL_SCHEME']}://{app.config['SERVER_NAME']}{app.config['APP_WEB_PATH']}/league?id="
-    running_email_states = {2: 'submit your song', 1: 'submit you vote'}
-    end_state = {0: 'view voting results'}
+    base_url = f"{app.config['PREFERRED_URL_SCHEME']}://{app.config['SERVER_NAME']}{app.config['APP_WEB_PATH']}"
     running_email_states = {
         1: EmailStateData(id=1, db='vote_email', status_str='submit you vote'),
         2: EmailStateData(id=2, db='submit_email', status_str='submit your song'),
     }
     end_states = {
-        0: EmailStateData(id=0, db='end_email', status_str='view voting results'),
+        0: EmailStateData(id=0, db='end_email', status_str='view round voting results'),
     }
     now = datetime.datetime.utcnow()
-    # get leagues that have not finished yet, for
-    # email_states that are not end_email
+    # get league rounds which have not finished yet, for running_email_states
     unfinished_leagues = Leagues.query.filter(Leagues.end_date >= now).all()
     for league in unfinished_leagues:
-        url = f'{base_url}{league.id}'
+        url = f'{base_url}/league?id={league.id}'
         members = LeagueMembers.query.filter_by(league_id=league.id).all()
         if not members:
             app.logger.warning(f'Zero members in league {league.name} ({league.id})')
@@ -70,6 +67,30 @@ def make_emails():
                 if len(email_recipients):
                     db.session.commit()
                     app.logger.info(f'Sent {len(email_recipients)} "{status_data.db}" emails for {league_round_id}')
+    # get league rounds which have just finished, for end_states
+    unfinished_rounds = Rounds.query.filter_by(end_email=False).filter(Rounds.end_date <= now).all()
+    for round_ in unfinished_rounds:
+        league_id = round_.league_id
+        url = f'{base_url}/round?id={round_.id}'
+        members = LeagueMembers.query.filter_by(league_id=league_id).all()
+        if not members:
+            app.logger.warning(f'Zero members in league {round_.leagues.name} ({league_id})')
+            continue
+        league_round_id = f'league = "{round_.leagues.name}" round = "{round_.name}"'
+        for status_id, status_data in end_states.items():
+            email_recipients = [m.user.email for m in members]
+            email_subject = f'[Music League: {round_.leagues.name[:20]}] its time to {status_data.status_str} !'
+            # generate emails
+            for recipient in email_recipients:
+                try:
+                    generate_email(email_subject, [recipient], status_data.status_str, url)
+                except Exception as err:
+                    app.logger.error(f'Failed to generate {status_data.db} email for {league_round_id} {recipient} due to error:\t{err}')
+                    continue
+                setattr(round_, status_data.db, True)
+            if len(email_recipients):
+                db.session.commit()
+                app.logger.info(f'Sent {len(email_recipients)} "{status_data.db}" emails for {league_round_id}')
 
 
 def make_email_html_body(status_str, url):
