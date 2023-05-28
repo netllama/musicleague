@@ -27,7 +27,7 @@ def make_emails():
     """Find rounds that are ready for submission, voting or ended, and send out notification emails."""
     base_url = f"{app.config['PREFERRED_URL_SCHEME']}://{app.config['SERVER_NAME']}{app.config['APP_WEB_PATH']}"
     running_email_states = {
-        1: EmailStateData(id=1, db='vote_email', status_str='submit you vote'),
+        1: EmailStateData(id=1, db='vote_email', status_str='submit your vote'),
         2: EmailStateData(id=2, db='submit_email', status_str='submit your song'),
     }
     end_states = {
