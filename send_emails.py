@@ -6,12 +6,12 @@ import datetime
 import os
 
 from dotenv import load_dotenv
+load_dotenv(f'{os.path.dirname(os.path.realpath(__file__))}/.flaskenv')  # needed by musicleague module imports
 from flask import render_template
 import html2text
 from musicleague import app, db, get_round_status, send_email, LeagueMembers, Leagues, Rounds
 
 
-load_dotenv('.flaskenv')
 app.config['PREFERRED_URL_SCHEME'] = os.environ['PREFERRED_URL_SCHEME']
 app.config['SERVER_NAME'] = os.environ['SERVER_NAME']
 
