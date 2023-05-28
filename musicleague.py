@@ -378,7 +378,7 @@ def league():
         if am_a_member:
             for round_data in rounds:
                 round_uri = f'''<a href="{url_for('round_')}?id={round_data.id}">'''
-                round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_data.id)
+                round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_data.id, user_id)
                 if round_status == 0:
                     action_str = f'{round_uri}ENDED</a>'
                 elif round_status == 1:
@@ -478,7 +478,7 @@ def round_():
     if not am_a_member:
         flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
-    round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_id)
+    round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_id, user_id)
     edit_round = request.args.get('edit', 0, type=int)
     final_round_vote_data = []
     if round_status == 0:
@@ -726,7 +726,7 @@ def send_email(subject, sender, recipients, text_body, html_body):
     mail.send(msg)
 
 
-def get_round_status(submit_days, vote_days, round_end_date, round_id):
+def get_round_status(submit_days, vote_days, round_end_date, round_id, user_id):
     """Determine the status of specified round, based on date data.
 
     returns integer value indicating status:
@@ -734,10 +734,9 @@ def get_round_status(submit_days, vote_days, round_end_date, round_id):
         0 = ended/finished
         1 = voting in progress
         2 = submissions in progress
-        3 = already submitted a song
+        3 = already submitted a song (can edit submission)
         4 = already voted
     """
-    user_id = current_user.get_id()
     round_status = -1
     now = datetime.utcnow()
     round_days_total = submit_days + vote_days
