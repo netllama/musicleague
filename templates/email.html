@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            <br><h2><p><b>Its time to {{ status }}</b>:</p>
+            <p>&rarr;&nbsp;&rarr;&nbsp;
+            <b>{{ url }}</b>
+            &nbsp;&larr;&nbsp;&larr;</p><br></h2>
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        <p>Music League is a <a href="https://github.com/netllama/musicleague">Github</a> project.</p>
+    {% endblock %}
+</body>
+</html>
