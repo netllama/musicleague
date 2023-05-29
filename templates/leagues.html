@@ -18,6 +18,7 @@
                         <th>Name</th>
                         <th>Details</th>
                         <th>Rounds</th>
+                        <th>Members</th>
                         <th>End&nbsp;Date</th>
                     </tr>
                 </thead>
@@ -27,6 +28,7 @@
                             <td><a href="{{ url_for('league') }}?id={{ data.id }}">{{ data.name }}</a></td>
                             <td>{{ data.descr }}</td>
                             <td>{{ data.round_count }}</td>
+                            <td>{{ data.members|length }}</td>
                             <td>{{ moment(data.end_date).format('YYYY-MM-DD HH:mm') }}</td>
                         </tr>
                     {% endfor %}
