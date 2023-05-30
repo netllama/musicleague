@@ -8,7 +8,7 @@
         <div id="content">
         {% block content %}
             {{ render_messages() }}
-            <p>League:&nbsp;[<b>{{ league.name }}</b>]</p>
+            <p>League:&nbsp;&lbrack;<b>{{ league.name }}</b>&rbrack;</p>
             <p>{{ league.descr }}</p>
             {% if current_user.is_authenticated and button %}
                 <form method="GET" action="" class="form" role="form">

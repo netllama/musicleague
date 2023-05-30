@@ -683,11 +683,12 @@ def vote():
         flash('Invalid league selected', 'error')
         return redirect(url_for('leagues'))
     # verify league membership status
+    app.logger.info(f'user_id = {user_id}\tround_id = {round_id}\tleague_id = {league_id}')
     am_a_member = LeagueMembers.query.filter_by(league_id=league_id).filter_by(user_id=user_id).first()
     if not am_a_member:
         flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
-    songs = Songs.query.filter_by(round_id=round_id).filter_by(league_id=league_id).filter(Users.id!=user_id)
+    songs = Songs.query.filter_by(round_id=round_id).filter_by(league_id=league_id).filter(Users.id!=int(user_id))
     if not songs.all():
         flash('Zero songs to vote on in this round', 'error')
         return redirect(url_for('league', id=league_id))
@@ -710,7 +711,7 @@ def vote():
             db.session.commit()
             flash(f'Thanks for voting in round: {round_data.name}')
         return redirect(url_for('round_', id=round_id))
-    return render_template('vote.html', title='Vote for songs', songs=songs.all(), votes=expected_total_votes)
+    return render_template('vote.html', title='Vote for songs', songs=songs.all(), user_id=int(user_id), votes=expected_total_votes)
 
 
 def send_async_email(app, msg):

@@ -12,12 +12,13 @@
         {% block content %}
             {{ render_messages() }}
             <p><b>Vote</b>&nbsp;&rarr;&nbsp;
-                League&nbsp;[<b>&nbsp;<a href="{{ url_for('league') }}?id={{ songs[0].leagues.id }}">{{ songs[0].leagues.name }}</a>
-                    &nbsp;</b>]&nbsp;&rarr;&nbsp;
-                Round&nbsp;[<b>&nbsp;{{ songs[0].rounds.name }}&nbsp;</b>]
+                League&nbsp;&lbrack;<b>&nbsp;<a href="{{ url_for('league') }}?id={{ songs[0].leagues.id }}">{{ songs[0].leagues.name }}</a>
+                    &nbsp;</b>&rbrack;&nbsp;&rarr;&nbsp;
+                Round&nbsp;&lbrack;<b>&nbsp;{{ songs[0].rounds.name }}&nbsp;</b>&rbrack;
             </p>
-            <p><b>{{ songs[0].leagues.upvotes }}</b> Total Upvotes&nbsp;|&nbsp;
-                <b>{{ songs[0].leagues.downvotes }}</b> Total Downvotes&nbsp;|&nbsp;Voting&nbsp;Ends: 
+            <p><b>{{ songs[0].leagues.upvotes - songs[0].leagues.downvotes }}</b> Total Votes&nbsp;&lbrack;&nbsp;
+                <b>{{ songs[0].leagues.upvotes }}</b> Total Upvotes&nbsp;|&nbsp;
+                <b>{{ songs[0].leagues.downvotes }}</b> Total Downvotes&nbsp;&rbrack;&nbsp;|&nbsp;Voting&nbsp;Ends: 
                 <b>{{ moment(songs[0].rounds.end_date).format('YYYY-MM-DD HH:mm') }}
                 </b></p><br>
             <form method="POST" action="" class="form" role="form">
@@ -25,7 +26,7 @@
                 <input id="round" name="round" required type="hidden" value="{{ songs[0].round_id }}">
                 <input id="league" name="league" required type="hidden" value="{{ songs[0].league_id }}">
                 {% for s in songs %}
-                <table id="song-{{ s.id }}">
+                <table id="song-{{ s.id }}" width="99%">
                     <tr>
                         <td><a href="{{ s.song_url }}"><img width="80" height="60" src="{{ s.thumbnail }}" alt="thumnail"></a>
                             <b>{{ s.title }}</b>
@@ -38,12 +39,13 @@
                         <td colspan="2" style="text-align:center;">
                             <div style=overflow:hidden;resize:none;max-width:100%;>
                             <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
-                            <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ s.video_id }}" 
+                            <iframe width="720" height="480" src="https://www.youtube-nocookie.com/embed/{{ s.video_id }}" 
                                 title="YouTube video player" frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                 allowfullscreen></iframe></div></div>
                         </td>
                     </tr>
+                    {% if user_id != s.user_id %}
                     <tr>
                         <td>
                             <div class="mb-3"><label class="form-label" for="comment-{{ s.id }}"><b>Song comment</b></label>
@@ -58,11 +60,13 @@
                             </div>
                         </td>
                     </tr>
+                    {% endif %}
                 </table><br><br>
                 <input id="song" name="song" required type="hidden" value="{{ s.id }}">
                 {% endfor %}
-                <p><b>{{ songs[0].leagues.upvotes }}</b> Total Upvotes available&nbsp;|&nbsp;
-                    <b>{{ songs[0].leagues.downvotes }}</b> Total Downvotes available</p>
+                <p><b>{{ songs[0].leagues.upvotes - songs[0].leagues.downvotes }}</b> Total Votes&nbsp;&lbrack;&nbsp;
+                <b>{{ songs[0].leagues.upvotes }}</b> Total Upvotes&nbsp;|&nbsp;
+                <b>{{ songs[0].leagues.downvotes }}</b> Total Downvotes&nbsp;&rbrack;</p>
                 <button disabled class="btn btn-primary" formmethod="post" id="submit" name="submit" type="submit" value="Submit Votes">Submit Votes</button>
             </form><br>
         {% endblock %}
@@ -83,7 +87,7 @@ const loaded = () => {
     const recountVotes = () => {
         // Easiest to just recount than work out total +/- the new value because user can backspace, etc.
         total = votes.reduce(sum, 0);
-        // Just random total, change as required
+        // Just random total
         button.disabled = total != {{ votes }};
     }
     votes.forEach((vote) => vote.addEventListener('input', recountVotes));
