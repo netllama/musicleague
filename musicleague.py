@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
 import os
-from threading import Thread
 
 from dotenv import load_dotenv
 from flask import Flask, flash, Markup, render_template, redirect, request, url_for
@@ -18,10 +17,11 @@ from flask_wtf.csrf import CSRFProtect
 from randimage import get_random_image
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql.expression import func
 from urllib.parse import urlparse
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.urls import url_parse
-from wtforms import BooleanField, EmailField, FieldList, FormField, HiddenField, IntegerField, IntegerRangeField, PasswordField, StringField, SubmitField, TextAreaField, URLField
+from wtforms import BooleanField, EmailField, FieldList, FormField, HiddenField, IntegerField, PasswordField, StringField, SubmitField, TextAreaField, URLField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 import youtube_api
 
@@ -48,11 +48,13 @@ class Config(object):
     YT_API_KEY = os.environ.get('YT_API_KEY')
     APP_WEB_PATH = os.environ.get('APP_WEB_PATH')
 
+
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     passwd = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Log In')
+
 
 class SignUpForm(FlaskForm):
     username_max_length = 20
@@ -81,6 +83,7 @@ class SignUpForm(FlaskForm):
         if user is not None:
             raise ValidationError('This email address is already associated with a user')
 
+
 class CreateLeagueForm(FlaskForm):
     name_max_length = 48
     descr_max_length = 128
@@ -95,6 +98,7 @@ class CreateLeagueForm(FlaskForm):
     round_count = IntegerField('Total Number of Rounds', default=5, validators=[DataRequired(), NumberRange(min=1, max=20)])
     submit = SubmitField('Create League')
 
+
 class RoundsForm(FlaskForm):
     name_max_length = 48
     descr_max_length = 128
@@ -103,9 +107,11 @@ class RoundsForm(FlaskForm):
     name = StringField('Round Name', validators=[DataRequired(), Length(max=name_max_length, message=name_max_length_msg)])
     descr = StringField('Description', validators=[DataRequired(), Length(max=descr_max_length, message=descr_max_length_msg)])
 
+
 class AddRoundsForm(FlaskForm):
     rounds = FieldList(FormField(RoundsForm), min_entries=1, max_entries=20)
     submit = SubmitField('Create Rounds')
+
 
 class SubmitSongForm(FlaskForm):
     descr_max_length = 128
@@ -116,6 +122,7 @@ class SubmitSongForm(FlaskForm):
     song_url = URLField('Youtube song link', validators=[DataRequired()])
     descr = TextAreaField('Song description', render_kw={"rows": 3, "cols": 50}, validators=[Optional(), Length(max=descr_max_length, message=descr_max_length_msg)])
     submit = SubmitField('Submit Song')
+
 
 class VoteForm(FlaskForm):
     comment_max_length = 128
@@ -192,11 +199,13 @@ class Users(UserMixin, db.Model):
     def check_password(self, passwd):
         return check_password_hash(self.passwd, passwd)
 
+
 class Icons(UserMixin, db.Model):
     __tablename__ = 'icons'
     id = db.Column(db.Integer, primary_key=True)
     icon = db.Column(db.LargeBinary)
-    user = db.relationship('Users', back_populates ='icons')
+    user = db.relationship('Users', back_populates='icons')
+
 
 class Leagues(UserMixin, db.Model):
     __tablename__ = 'leagues'
@@ -226,6 +235,7 @@ class Leagues(UserMixin, db.Model):
         app.logger.debug(f'now = {now}\tsubmit_days = {submit_days}\tround_count = {round_count}\tvote_days = {vote_days}\tend_date = {end_date}')
         self.end_date = end_date
 
+
 class LeagueMembers(UserMixin, db.Model):
     __tablename__ = 'league_members'
     id = db.Column(db.Integer, primary_key=True)
@@ -233,10 +243,11 @@ class LeagueMembers(UserMixin, db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     user = db.relationship('Users', back_populates='members')
     leagues = db.relationship('Leagues', back_populates='members')
-    __table_args__ = ( db.UniqueConstraint(league_id, user_id), )
+    __table_args__ = ( db.UniqueConstraint(league_id, user_id), )  # noqa: E201
 
     def __repr__(self):
         return f'<League Id {self.league_id}\tUser Id {self.user_id}>'
+
 
 class Rounds(UserMixin, db.Model):
     __tablename__ = 'rounds'
@@ -254,6 +265,7 @@ class Rounds(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<Name {self.name}>'
+
 
 class Songs(UserMixin, db.Model):
     __tablename__ = 'songs'
@@ -274,6 +286,7 @@ class Songs(UserMixin, db.Model):
     def __repr__(self):
         return f'<Id {self.id}\tURL {self.song_url}>'
 
+
 class Votes(UserMixin, db.Model):
     __tablename__ = 'votes'
     id = db.Column(db.Integer, primary_key=True)
@@ -292,11 +305,13 @@ class Votes(UserMixin, db.Model):
     def __repr__(self):
         return f'<Song Id {self.song_id}\tVotes {self.votes}>'
 
+
 @dataclass
 class LeagueStandings():
     name: str
     username: str
     votes: int = 0
+
 
 @dataclass
 class FinalRoundVoteData():
@@ -305,11 +320,12 @@ class FinalRoundVoteData():
     song: Songs
     votes: Votes
 
+
 @app.route(f"{app.config['APP_WEB_PATH']}/")
 @app.route(f"{app.config['APP_WEB_PATH']}/index")
 def default():
-    content = 'ML Content!'
-    return render_template('index.html', title="CPU Music League", content=content)
+    songs = Songs.query.order_by(func.random()).limit(4).all()
+    return render_template('index.html', title="CPU Music League", content=songs)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/login", methods=['GET', 'POST'])
@@ -356,7 +372,7 @@ def league():
     rounds = Rounds.query.filter_by(league_id=league_id).order_by(Rounds.end_date.asc())
     add_button = False
     am_a_member = False
-    actions = {r.id: ''  for r in rounds}
+    actions = {r.id: '' for r in rounds}
     if current_user.is_authenticated:
         user_id = current_user.get_id()
         if request.method == 'GET' and request.args.get('submit', None):
@@ -484,7 +500,6 @@ def round_():
     if round_status == 0:
         # round has ended
         songs_data = {}
-        songs = round_data.songs
         # key data by song id
         for song in round_data.songs:
             songs_data[song.id] = song
@@ -633,7 +648,6 @@ def submit_song():
     if league_id == 0:
         flash('Invalid round selected', 'error')
         return redirect(url_for('leagues'))
-    edit = request.args.get('can_edit', 0, type=int)
     song = Songs.query.filter_by(user_id=user_id).filter_by(round_id=round_id).first()
     if song:
         song_url = song.song_url
@@ -646,7 +660,7 @@ def submit_song():
         if not song_data:
             flash(f'Invalid youtube song link ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
-        songs = Songs.query.filter_by(round_id=round_id).filter_by(video_id=song_data['video_id']).filter(Songs.user_id!=user_id).first()
+        songs = Songs.query.filter_by(round_id=round_id).filter_by(video_id=song_data['video_id']).filter(Songs.user_id != user_id).first()
         if songs:
             flash(f'Someone else has already submitted this song ( {form.song_url.data} )')
             return redirect(url_for('submit_song', id=league_id, round=round_id, user=user_id))
@@ -688,7 +702,7 @@ def vote():
     if not am_a_member:
         flash('Not a member of the league, you cannot view round data', 'error')
         return redirect(url_for('leagues'))
-    songs = Songs.query.filter_by(round_id=round_id).filter_by(league_id=league_id).filter(Users.id!=int(user_id))
+    songs = Songs.query.filter_by(round_id=round_id).filter_by(league_id=league_id).filter(Users.id != int(user_id))
     if not songs.all():
         flash('Zero songs to vote on in this round', 'error')
         return redirect(url_for('league', id=league_id))
@@ -709,7 +723,7 @@ def vote():
             # enforce per round vote count limits
             db.session.rollback()
             flash(f'Total votes (up plus down) must equal {expected_total_votes}', 'error')
-        else:    
+        else:
             db.session.commit()
             flash(f'Thanks for voting in round: {round_data.name}')
         return redirect(url_for('round_', id=round_id))
@@ -805,7 +819,7 @@ def get_yt_song_data(song_url):
     try:
         data = yt.get_video_metadata(video_id)
     except TypeError as err:
-        app.logger.warning(f'Invalid video Id specified ( {song_url} )')
+        app.logger.warning(f'Invalid video Id specified ( {song_url} ):\t{err}')
         return song_data
     if not data:
         app.logger.warning(f'Invalid video Id specified ( {song_url} )')

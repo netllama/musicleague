@@ -7,7 +7,31 @@
     <div id="contentliquid"><div id="contentwrap">
         <div id="content">
         {% block content %}
-            {{ super() }}
+            <p><b>Create a music league and vote on songs</b></p>
+            <table width="95%">
+                {% for song_data in content %}
+                <tr>
+                    <td style="text-align:center;">
+                    <table width="100%">
+                        <tr>
+                            <td style="text-align:center;">
+                                <p>League:&nbsp;<a href="{{ url_for('league') }}?id={{ song_data.league_id }}"><b>{{ song_data.leagues.name }}</b></a></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;">
+                                <div style=overflow:hidden;resize:none;max-width:100%;>
+                                <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
+                                    <iframe width="640" height="480" src="https://www.youtube-nocookie.com/embed/{{ song_data.video_id }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
+                                    </iframe>
+                                </div></div>
+                            </td>
+                        </tr>
+                    </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
         {% endblock %}
         </div>
     </div></div>
