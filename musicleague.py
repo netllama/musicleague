@@ -698,7 +698,9 @@ def vote():
         actual_total_votes = 0
         song_ids = [i.id for i in songs.all()]
         for song_id in song_ids:
-            votes = request.form.get(f'vote-{song_id}', type=int)
+            votes = request.form.get(f'vote-{song_id}', 0, type=int)
+            if not votes:
+                continue
             actual_total_votes += votes
             comment = request.form.get(f'comment-{song_id}', '')
             vote = Votes(song_id=song_id, league_id=league_id, round_id=round_id, user_id=user_id, votes=votes, comment=comment)
