@@ -33,16 +33,19 @@ YT_API_KEY=             # Required for processing youtube video URLs. This API k
 APP_WEB_PATH=           # Set to a a path value if you want to host the music league from a path other than the top level ( http://example.com/ ) such as 'ml' ( http://example.com/ml ). Otherwise leave unset.
 PREFERRED_URL_SCHEME=   # either http or https, based on whether you are using an SSL cert for your web server
 SERVER_NAME=            # default hostname of the server (eg. 'music.example.com')
+SLACK_BOT_TOKEN=        # Slack OAuth API token, needed to send notices to a slack channel
+SLACK_CHANNEL=          # name of Slack channel to send notices. Must start with # symbol.
 ```
 5. Start up the app locally by running `FLASK_DEBUG=0 flask run` and you should be able to connect to http://127.0.0.1:5000 to test drive everything.
 6. Once you are confident that everything is working as expected, move the app behind a real, production quality, secure web server (nginx, apache, etc) and run as some sort of WSGI service (such as gunicorn).
     - Do not expose the app to the internet using the developer Flask built-in web server (port 5000 from the previous step), as it cannot handle concurrent requests, and is insecure.
     - If you want to use gunicorn, then add it to the virtenv with `pip install gunicorn` and run as `gunicorn -b localhost:5000 -w 1 run:app`
         - Note this will run via port 5000 on localhost, and only spawn a single thread. Adjust as appropriate for your needs and environment.
-7. If you wish to generate emails to users when each music league round begins, voting starts and voting ends, then create a cronjob on the server which calls `send_emails.py`.
+7. If you wish to generate emails to users when each music league round begins, voting starts and voting ends, then create a cronjob on the server which calls `send_notices.py`.
+    - Optionally, if you want to send the notices to a slack channel, you must populate both SLACK_BOT_TOKEN and SLACK_CHANNEL variables inside of your `.flaskenv` file.
     - The cronjob job should run using the python inside of your music league virtual environemnt (not the external, OS level python binary that may have shipped with the OS). For example:
-        - `/home/netllama/stuff/flask/bin/python send_emails.py`
+        - `/home/netllama/stuff/flask/bin/python send_noticess.py`
     - Running every 10 or 15 minutes should be sufficient, but there is no requirement that it run with a specific frequency:
-        - `*/10  *   *   *   *   /home/netllama/stuff/flask/bin/python send_emails.py`
+        - `*/10  *   *   *   *   /home/netllama/stuff/flask/bin/python send_notices.py`
 
 This project is **not** associated and **not** affiliated with 'Music League' ( https://musicleague.com ) in any way.

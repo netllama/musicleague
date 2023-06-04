@@ -12,6 +12,7 @@ psycopg2
 python-dotenv
 randimage
 setproctitle
+slack_sdk
 SQLAlchemy
 WTForms
 youtube-data-api

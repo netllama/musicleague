@@ -1,15 +1,18 @@
 #!/usr/bin/env python
-"""Used to generate cron driven email notifications"""
+"""Used to generate cron driven slack & email notifications"""
 
 from dataclasses import dataclass
 import datetime
 import os
+import random
 
 from dotenv import load_dotenv
 load_dotenv(f'{os.path.dirname(os.path.realpath(__file__))}/.flaskenv')  # needed by musicleague module imports
 from flask import render_template
 import html2text
 from musicleague import app, db, get_round_status, send_email, LeagueMembers, Leagues, Rounds
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 
 app.config['PREFERRED_URL_SCHEME'] = os.environ['PREFERRED_URL_SCHEME']
@@ -24,7 +27,7 @@ class EmailStateData():
 
 
 def make_emails():
-    """Find rounds that are ready for submission, voting or ended, and send out notification emails."""
+    """Find rounds that are ready for submission, voting or ended, and send out notifications."""
     base_url = f"{app.config['PREFERRED_URL_SCHEME']}://{app.config['SERVER_NAME']}{app.config['APP_WEB_PATH']}"
     running_email_states = {
         1: EmailStateData(id=1, db='vote_email', status_str='submit your vote'),
@@ -67,6 +70,8 @@ def make_emails():
                 if len(email_recipients):
                     db.session.commit()
                     app.logger.info(f'Sent {len(email_recipients)} "{status_data.db}" emails for {league_round_id}')
+                # generate slack message
+                create_slack_msg(url, email_subject)
     # get league rounds which have just finished, for end_states
     unfinished_rounds = Rounds.query.filter_by(end_email=False).filter(Rounds.end_date <= now).all()
     for round_ in unfinished_rounds:
@@ -91,6 +96,23 @@ def make_emails():
             if len(email_recipients):
                 db.session.commit()
                 app.logger.info(f'Sent {len(email_recipients)} "{status_data.db}" emails for {league_round_id}')
+
+
+def create_slack_msg(url, base_msg):
+    """Generate announcement to slack channel."""
+    if not os.environ.get('SLACK_CHANNEL') or not os.environ.get('SLACK_BOT_TOKEN'):
+        # no slack channel or bot token configured
+        return
+    emojis = [':catflix:', ':llama:', ':music_cat:', ':foosball:', ':shira-model:', ':gemma-sky:', ':kakuk-sfw:', ':flynnie:', ':kaleo-party:', ':ellie:', ':pretz-look:',
+              ':alien-chips:', ':frosty:', ':meimei:',  ':mystery_cat:']
+    token = os.environ.get('SLACK_BOT_TOKEN')
+    channel = os.environ.get('SLACK_CHANNEL')
+    msg = f':tada: {base_msg} {" ".join(random.choices(emojis, k=3))}'
+    try:
+        client = WebClient(token=token)
+        client.chat_postMessage(channel=channel, text=msg)
+    except SlackApiError as err:
+        app.logger.error(f'Failed to post to slack channel {channel} "{msg}" due to error:\t{err}')
 
 
 def make_email_html_body(status_str, url):
