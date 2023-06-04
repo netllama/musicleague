@@ -107,7 +107,7 @@ def create_slack_msg(url, base_msg):
               ':alien-chips:', ':frosty:', ':meimei:',  ':mystery_cat:']
     token = os.environ.get('SLACK_BOT_TOKEN')
     channel = os.environ.get('SLACK_CHANNEL')
-    msg = f':tada: {base_msg} {" ".join(random.choices(emojis, k=3))}'
+    msg = f':tada: {base_msg} {" ".join(random.sample(emojis, k=3))} {url}'
     try:
         client = WebClient(token=token)
         client.chat_postMessage(channel=channel, text=msg)
