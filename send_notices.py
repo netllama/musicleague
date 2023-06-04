@@ -70,8 +70,8 @@ def make_emails():
                 if len(email_recipients):
                     db.session.commit()
                     app.logger.info(f'Sent {len(email_recipients)} "{status_data.db}" emails for {league_round_id}')
-                # generate slack message
-                create_slack_msg(url, email_subject)
+                    # generate slack message
+                    create_slack_msg(url, email_subject)
     # get league rounds which have just finished, for end_states
     unfinished_rounds = Rounds.query.filter_by(end_email=False).filter(Rounds.end_date <= now).all()
     for round_ in unfinished_rounds:
