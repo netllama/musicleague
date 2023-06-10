@@ -7,6 +7,7 @@ import os
 import random
 
 from dotenv import load_dotenv
+
 load_dotenv(f'{os.path.dirname(os.path.realpath(__file__))}/.flaskenv')  # needed by musicleague module imports
 from flask import render_template
 import html2text
@@ -20,7 +21,7 @@ app.config['SERVER_NAME'] = os.environ['SERVER_NAME']
 
 
 @dataclass
-class EmailStateData():
+class EmailStateData:
     id: int
     db: str
     status_str: str
@@ -55,7 +56,9 @@ def make_emails():
                 email_recipients = []
                 email_subject = f'[Music League: {league.name[:20]}] its time to {status_data.status_str} !'
                 for member in members:
-                    round_status = get_round_status(league.submit_days, league.vote_days, round_data.end_date, round_data.id, member.user.id)
+                    round_status = get_round_status(
+                        league.submit_days, league.vote_days, round_data.end_date, round_data.id, member.user.id
+                    )
                     if round_status == status_id:
                         # collect members who need to receive this status email
                         email_recipients.append(member.user.email)
@@ -64,7 +67,9 @@ def make_emails():
                     try:
                         generate_email(email_subject, [recipient], status_data.status_str, url)
                     except Exception as err:
-                        app.logger.error(f'Failed to generate {status_data.db} email for {league_round_id} {recipient} due to error:\t{err}')
+                        app.logger.error(
+                            f'Failed to generate {status_data.db} email for {league_round_id} {recipient} due to error:\t{err}'
+                        )
                         continue
                     setattr(round_data, status_data.db, True)
                 if len(email_recipients):
@@ -90,7 +95,9 @@ def make_emails():
                 try:
                     generate_email(email_subject, [recipient], status_data.status_str, url)
                 except Exception as err:
-                    app.logger.error(f'Failed to generate {status_data.db} email for {league_round_id} {recipient} due to error:\t{err}')
+                    app.logger.error(
+                        f'Failed to generate {status_data.db} email for {league_round_id} {recipient} due to error:\t{err}'
+                    )
                     continue
                 setattr(round_, status_data.db, True)
             if len(email_recipients):
@@ -103,8 +110,23 @@ def create_slack_msg(url, base_msg):
     if not os.environ.get('SLACK_CHANNEL') or not os.environ.get('SLACK_BOT_TOKEN'):
         # no slack channel or bot token configured
         return
-    emojis = [':catflix:', ':llama:', ':music_cat:', ':foosball:', ':shira-model:', ':gemma-sky:', ':kakuk-sfw:', ':flynnie:', ':kaleo-party:', ':ellie:', ':pretz-look:',
-              ':alien-chips:', ':frosty:', ':meimei:',  ':mystery_cat:']
+    emojis = [
+        ':catflix:',
+        ':llama:',
+        ':music_cat:',
+        ':foosball:',
+        ':shira-model:',
+        ':gemma-sky:',
+        ':kakuk-sfw:',
+        ':flynnie:',
+        ':kaleo-party:',
+        ':ellie:',
+        ':pretz-look:',
+        ':alien-chips:',
+        ':frosty:',
+        ':meimei:',
+        ':mystery_cat:',
+    ]
     token = os.environ.get('SLACK_BOT_TOKEN')
     channel = os.environ.get('SLACK_CHANNEL')
     msg = f':tada: {base_msg} {" ".join(random.sample(emojis, k=3))} {url}'
