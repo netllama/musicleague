@@ -26,7 +26,8 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.icons (
     id integer NOT NULL,
-    icon bytea NOT NULL
+    icon bytea NOT NULL,
+    user_id integer NOT NULL
 );
 
 
@@ -516,7 +517,9 @@ GRANT ALL ON TABLE public.league_members TO ml;
 
 GRANT ALL ON SEQUENCE public.league_members_id_seq TO ml;
 
-
+-- foreign key between users and icons
+ALTER TABLE ONLY public.icons
+    ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES public.users(id);
 --
 -- PostgreSQL database dump complete
 --
