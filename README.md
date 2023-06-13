@@ -35,6 +35,7 @@ PREFERRED_URL_SCHEME=   # either http or https, based on whether you are using a
 SERVER_NAME=            # default hostname of the server (eg. 'music.example.com')
 SLACK_BOT_TOKEN=        # Slack OAuth API token, needed to send notices to a slack channel
 SLACK_CHANNEL=          # name of Slack channel to send notices. Must start with # symbol.
+MAX_CONTENT_LENGTH=     # max size (bytes) for icon/avatar image files. 1MB = 1048576
 ```
 5. Start up the app locally by running `FLASK_DEBUG=0 flask run` and you should be able to connect to http://127.0.0.1:5000 to test drive everything.
 6. Once you are confident that everything is working as expected, move the app behind a real, production quality, secure web server (nginx, apache, etc) and run as some sort of WSGI service (such as gunicorn).
