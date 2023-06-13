@@ -1,6 +1,8 @@
+import base64
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import io
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
 import os
@@ -14,8 +16,9 @@ from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
-from randimage import get_random_image
-from sqlalchemy import func
+from flask_wtf.file import FileAllowed, FileField
+import magic
+from PIL import Image
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import func
 from urllib.parse import urlparse
@@ -47,6 +50,8 @@ class Config(object):
     USERS_PER_PAGE = 20
     YT_API_KEY = os.environ.get('YT_API_KEY')
     APP_WEB_PATH = os.environ.get('APP_WEB_PATH')
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH'))
+    UPLOAD_EXTENSIONS = ['.jpg', '.png']
 
 
 class LoginForm(FlaskForm):
@@ -111,6 +116,22 @@ class RoundsForm(FlaskForm):
 class AddRoundsForm(FlaskForm):
     rounds = FieldList(FormField(RoundsForm), min_entries=1, max_entries=20)
     submit = SubmitField('Create Rounds')
+
+
+class SettingsForm(FlaskForm):
+    passwd_min_length = 7
+    name_max_length = 65
+    img_formats = ['jpg', 'png']
+    img_msg = f'Images only ({", ".join(img_formats)})'
+    name_max_length_msg = f'Names cannot be longer than {name_max_length} characters'
+    passwd_length_msg = f'Passwords must be at least {passwd_min_length} characters long'
+    passwd = PasswordField('Password *', validators=[DataRequired(), Length(min=passwd_min_length, message=passwd_length_msg)])
+    passwd2 = PasswordField('Repeat Password *', validators=[EqualTo('passwd')])
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+    name = StringField('Name', validators=[DataRequired(), Length(max=name_max_length, message=name_max_length_msg)])
+    username = StringField('Username', validators=[DataRequired()])
+    icon = FileField('New Avatar', validators=[FileAllowed(img_formats, img_msg)])
+    submit = SubmitField('Update')
 
 
 class SubmitSongForm(FlaskForm):
@@ -203,7 +224,8 @@ class Users(UserMixin, db.Model):
 class Icons(UserMixin, db.Model):
     __tablename__ = 'icons'
     id = db.Column(db.Integer, primary_key=True)
-    icon = db.Column(db.LargeBinary)
+    icon = db.Column(db.LargeBinary, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
     user = db.relationship('Users', back_populates='icons')
 
 
@@ -730,6 +752,49 @@ def vote():
     return render_template('vote.html', title='Vote for songs', songs=songs.all(), user_id=int(user_id), votes=expected_total_votes)
 
 
+@app.route(f"{app.config['APP_WEB_PATH']}/settings", methods=['GET', 'POST'])
+@login_required
+def settings():
+    """Update account settings."""
+    img_format_mimes = ['image/jpeg', 'image/png']
+    image = ''
+    user_id = current_user.get_id()
+    user_data = Users.query.filter_by(id=user_id).first()
+    if user_data.icons:
+        size = (256, 256)
+        resized_image = resize_image(size, user_data.icons.icon)
+        image = base64.b64encode(resized_image).decode('ascii')
+    form = SettingsForm(name=user_data.name, email=user_data.email, username=user_data.username)
+    if form.validate_on_submit():
+        if form.icon.data:
+            # process icon/avatar
+            icon_data = request.files['icon']
+            # validate that its really an image
+            icon_blob = icon_data.stream.read()
+            fs = magic.from_buffer(icon_blob, mime=True)
+            if fs not in img_format_mimes:
+                # invalid file type
+                flash(f'Image ({icon_data.filename}) is invalid ({fs})', 'error')
+                return render_template('settings.html', title='Update account settings', form=form, user_data=user_data)
+            encoded_img = icon_blob
+            if not user_data.icon_id:
+                # no pre-existing icon exists for this user, create new one
+                icon = Icons(icon=encoded_img, user_id=user_id)
+                db.session.add(icon)
+                db.session.commit()
+                user_data.icon_id = icon.id
+                db.session.commit()
+            else:
+                # icon already exists, update with the new one
+                user_data.icons = encoded_img
+        user_data.name = form.name.data
+        user_data.email = form.email.data
+        user_data.set_password(form.passwd.data)
+        db.session.commit()
+        flash(f"{user_data.username}'s settings updated successfully!")
+    return render_template('settings.html', title='Update account settings', form=form, user_data=user_data, avatar=image)
+
+
 def send_async_email(app, msg):
     with app.app_context():
         mail.send(msg)
@@ -830,6 +895,23 @@ def get_yt_song_data(song_url):
     return song_data
 
 
+def resize_image(dims, image):
+    """Resize bytes stream image to new size.
+
+    dims: (tpl) resized integer width by height dimensions
+    image: (bytes) image stream
+    returns new_image: (bytes) resized image stream
+    """
+    # resize
+    im = Image.open(io.BytesIO(image))
+    im.thumbnail(dims, Image.Resampling.LANCZOS)
+    # convert back to bytes, and to PNG format
+    img_bytes = io.BytesIO()
+    im.save(img_bytes, format='PNG')
+    new_image = img_bytes.getvalue()
+    return new_image
+
+
 # used by 'flask shell' to setup query context
 @app.shell_context_processor
 def make_shell_context():
@@ -850,6 +932,12 @@ def load_user(user_id):
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
+
+
+@app.errorhandler(413)
+def too_large(error):
+    max_length = app.config['MAX_CONTENT_LENGTH']
+    return render_template('413.html', length=max_length), 413
 
 
 @app.errorhandler(500)

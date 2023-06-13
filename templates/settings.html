@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% from 'bootstrap5/form.html' import render_field %}
+{% block title %}{{ super() }}{% endblock %}
+<body>
+    {% block nav %}
+        {{ super() }}
+    {% endblock %}
+    <div id="contentliquid"><div id="contentwrap">
+        <div id="content">
+        {% block content %}
+            {{ render_messages() }}
+            <p><b>Change your account settings</b></p>
+            {% if avatar %}
+                <p><img src="data:image/png;base64,{{ avatar }}"/></p>
+            {% endif %}
+            <form action="" method="post" class="form" role="form" enctype="multipart/form-data">
+                {{ form.csrf_token() }}
+                {{ render_field(form.name) }}
+                {{ render_field(form.username, value=user_data.username, disabled='disabled') }}
+                {{ render_field(form.email) }}
+                {{ render_field(form.icon) }}
+                {{ render_field(form.passwd) }}
+                {{ render_field(form.passwd2) }}
+                {{ render_field(form.submit) }}
+            </form>
+        {% endblock %}
+        </div>
+    </div></div>
+    {% block footer %}
+        {{ super() }}
+    {% endblock %}
+</body>
+</html>

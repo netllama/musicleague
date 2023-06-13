@@ -10,6 +10,7 @@ gunicorn
 html2text
 psycopg2
 python-dotenv
+python-magic
 randimage
 setproctitle
 slack_sdk
