@@ -54,7 +54,7 @@ ALTER TABLE public.icons_id_seq OWNER TO ml;
 
 ALTER SEQUENCE public.icons_id_seq OWNED BY public.icons.id;
 
-
+CREATE unique index icons_user_id ON icons(user_id);
 --
 -- Name: league_members; Type: TABLE; Schema: public; Owner: ml
 --

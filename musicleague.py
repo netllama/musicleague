@@ -70,12 +70,15 @@ class SignUpForm(FlaskForm):
     user_max_length_msg = f'Usernames must be {username_min_length} to {username_max_length} characters long'
     name_max_length_msg = f'Names cannot be longer than {name_max_length} characters'
     passwd_length_msg = f'Passwords must be at least {passwd_min_length} characters long'
+    img_formats = ['jpg', 'png']
+    img_msg = f'Images only ({", ".join(img_formats)})'
     username = StringField('Username', validators=[DataRequired(), Regexp('\w', message=user_regex_msg), Length(max=username_max_length, min=username_min_length, message=user_max_length_msg)])
     passwd = PasswordField('Password', validators=[DataRequired(), Length(min=passwd_min_length, message=passwd_length_msg)])
     passwd2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('passwd')])
     email = EmailField('Email', validators=[DataRequired(), Email()])
     name = StringField('Name', validators=[DataRequired(), Length(max=name_max_length, message=name_max_length_msg)])
+    icon = FileField(f'Avatar Image ({", ".join(img_formats)})', validators=[FileAllowed(img_formats, img_msg)])
     submit = SubmitField('Sign Up')
 
     def validate_username(self, username):
@@ -638,15 +641,32 @@ def logout():
 def signup():
     if current_user.is_authenticated:
         return redirect(url_for('default'))
+    img_formats = ['jpeg', 'png']
+    img_format_mimes = [f'image/{i}' for i in img_formats]
     form = SignUpForm()
     if form.validate_on_submit():
         user = Users(username=form.username.data, email=form.email.data, name=form.name.data)
         user.set_password(form.passwd.data)
         db.session.add(user)
         db.session.commit()
+        if form.icon.data:
+            # process icon/avatar
+            icon_data = request.files['icon']
+            # validate that its really an image
+            icon_blob = icon_data.stream.read()
+            fs = magic.from_buffer(icon_blob, mime=True)
+            if fs not in img_format_mimes:
+                # invalid file type
+                flash(f'Image ({icon_data.filename}) is invalid ({fs})', 'error')
+                return render_template('signup.html', title='Music League Sign Up', form=form)
+            icon = Icons(icon=icon_blob, user_id=user.id)
+            db.session.add(icon)
+            db.session.commit()
+            user.icon_id = icon.id
+            db.session.commit()
         flash(f'{form.name.data} thanks for registering as {form.username.data} ({form.email.data})')
         return redirect(url_for('login'))
-    return render_template('signup.html', title="CPU Music League Sign Up", form=form)
+    return render_template('signup.html', title='Music League Sign Up', form=form)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/submit", methods=['GET', 'POST'])
