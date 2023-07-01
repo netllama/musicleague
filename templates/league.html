@@ -17,6 +17,13 @@
                     <input class="btn btn-primary btn-md" id="submit" name="submit" type="submit" value="Join This League!">
                 </form><br>
             {% endif %}
+            {% if avatars %}
+                <p>League members:&nbsp;
+                {% for username, image in avatars.items() %}
+                    <img title="{{ username }}" src="data:image/png;base64,{{ image }}"/>&nbsp;
+                {% endfor %}
+                </p>
+            {% endif %}
             <table>
             <thead>
                 <tr>

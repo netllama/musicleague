@@ -34,7 +34,11 @@
                             <div id=embed-google-map style="height:100%; width:100%;max-width:100%;">
                             <iframe width="374" height="210" src="https://www.youtube-nocookie.com/embed/{{ vote_data.song.video_id }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div>
                         </td>
-                        <td>{{ vote_data.song.user.name }}<br>(&nbsp;{{ vote_data.song.user.username }}&nbsp;)</td>
+                        <td>{{ vote_data.song.user.name }}<br>(&nbsp;{{ vote_data.song.user.username }}&nbsp;)<br>
+                        {% if avatars[vote_data.song.user.username] %}
+                            <img src="data:image/png;base64,{{ avatars[vote_data.song.user.username] }}"/>
+                        {% endif %}
+                        </td>
                         <td width="11%">{{ vote_data.total_votes }}
                             {% if loop.index == 1 %}
                                 <img width="55" height="55" style="transform:rotate(270deg);" src="{{ url_for('static', filename='images/emojoine_r.svg') }}" alt="huzzah!">
@@ -55,7 +59,11 @@
                                 <tbody>
                                 {% for vote in vote_data.votes %}
                                     <tr>
-                                        <td>{{ vote.user.name }}</td>
+                                        <td>{{ vote.user.name }}&nbsp;
+                                        {% if avatars[vote.user.username] %}
+                                            <img src="data:image/png;base64,{{ avatars[vote.user.username] }}"/>
+                                        {% endif %}
+                                        </td>
                                         <td>{{ vote.comment }}</td>
                                         <td>{{ vote.votes }}</td>
                                     </tr>

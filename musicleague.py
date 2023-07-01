@@ -332,6 +332,14 @@ class Votes(UserMixin, db.Model):
 
 
 @dataclass
+class UserData():
+    username: str
+    name: str
+    last_login: str
+    avatar: bytes = b''
+
+
+@dataclass
 class LeagueStandings():
     name: str
     username: str
@@ -384,6 +392,7 @@ def leagues():
 @app.route(f"{app.config['APP_WEB_PATH']}/league", methods=['GET', 'POST'])
 def league():
     """View/Join a league."""
+    avatars = {}
     now = datetime.utcnow()
     league_id = request.args.get('id', 0, type=int)
     if league_id == 0:
@@ -393,6 +402,13 @@ def league():
     if not league:
         flash('Invalid league selected', 'error')
         return redirect(url_for('leagues'))
+    # generate avatars
+    for member in league.members:
+        if member.user.icons:
+            size = (36, 36)
+            resized_image = resize_image(size, member.user.icons.icon)
+            image = base64.b64encode(resized_image).decode('ascii')
+            avatars[member.user.username] = image
     league_status = 'ENDED' if now > league.end_date else 'RUNNING'
     rounds = Rounds.query.filter_by(league_id=league_id).order_by(Rounds.end_date.asc())
     add_button = False
@@ -440,7 +456,7 @@ def league():
                     # -1
                     action_str = f'{round_uri}NOT&nbsp;STARTED</a>'
                 actions[round_data.id] = Markup(action_str)
-    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, status=league_status, button=add_button, member=am_a_member, actions=actions)
+    return render_template('league.html', title='View / Join this Music League', id=league_id, league=league, rounds=rounds, status=league_status, button=add_button, member=am_a_member, actions=actions, avatars=avatars)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/standings", methods=['GET'])
@@ -448,6 +464,7 @@ def league():
 def standings():
     """View current league standings (total points for each member)."""
     standings_data = []
+    avatars = defaultdict()
     now = datetime.utcnow()
     league_id = request.args.get('id', 0, type=int)
     if league_id == 0:
@@ -489,10 +506,15 @@ def standings():
             username=username,
             votes=sum(user_votes)
         )
+        if user.user.icons:
+            size = (48, 48)
+            resized_image = resize_image(size, user.user.icons.icon)
+            image = base64.b64encode(resized_image).decode('ascii')
+            avatars[user.user.username] = image
         standings_data.append(user_data)
     # sort by total points
     sorted_standings = sorted(standings_data, key=lambda x: x.votes, reverse=True)
-    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=reporting_tstamp, data=sorted_standings, round_status_data=round_status_data)
+    return render_template('standings.html', title='View League Standings', league_data=league, status=league_status, end_date=reporting_tstamp, data=sorted_standings, round_status_data=round_status_data, avatars=avatars)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/round", methods=['GET', 'POST'])
@@ -500,6 +522,7 @@ def standings():
 def round_():
     """Round details."""
     votes = None
+    avatars = defaultdict()
     user_id = current_user.get_id()
     round_id = request.args.get('id', 0, type=int)
     if round_id == 0:
@@ -536,6 +559,11 @@ def round_():
         # collect per user vote data
         vote_data = defaultdict(list)
         for vote in round_data.votes:
+            if vote.user.icons:
+                size = (36, 36)
+                resized_image = resize_image(size, vote.user.icons.icon)
+                image = base64.b64encode(resized_image).decode('ascii')
+                avatars[vote.user.username] = image
             vote_data[vote.song_id].append(vote)
         sorted_vote_data = {}
         for song_id, votes_data in vote_data.items():
@@ -551,6 +579,11 @@ def round_():
                 song=songs_data[song_id],
                 votes=sorted_vote_data[song_id],
             )
+            if songs_data[song_id].user.icons:
+                size = (48, 48)
+                resized_image = resize_image(size, songs_data[song_id].user.icons.icon)
+                image = base64.b64encode(resized_image).decode('ascii')
+                avatars[songs_data[song_id].user.username] = image
             final_round_vote_data.append(round_vote_count_data)
     elif round_status == 1:
         # vote now
@@ -571,7 +604,7 @@ def round_():
         # round is not started, or invalid status provided
         flash('The selected round has not yet started', 'error')
         return redirect(url_for('league', id=league_id))
-    return render_template('round.html', title='View Round', status=round_status, round_data=round_data, final_vote_data=final_round_vote_data)
+    return render_template('round.html', title='View Round', status=round_status, round_data=round_data, final_vote_data=final_round_vote_data, avatars=avatars)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/create", methods=['GET', 'POST'])
@@ -623,11 +656,25 @@ def add_rounds():
 @login_required
 def users():
     """List registered members/users."""
+    users = []
     page = request.args.get('page', 1, type=int)
-    users = Users.query.order_by(Users.username).paginate(page=page, per_page=app.config['USERS_PER_PAGE'], error_out=False)
-    next_url = url_for('users', page=users.next_num) if users.has_next else None
-    prev_url = url_for('users', page=users.prev_num) if users.has_prev else None
-    return render_template('members.html', title='Music League Members', users=users.items, next_url=next_url, prev_url=prev_url)
+    users_data = Users.query.order_by(Users.username).paginate(page=page, per_page=app.config['USERS_PER_PAGE'], error_out=False)
+    next_url = url_for('users', page=users_data.next_num) if users_data.has_next else None
+    prev_url = url_for('users', page=users_data.prev_num) if users_data.has_prev else None
+    for user_data in users_data.items:
+        image = b''
+        if user_data.icons:
+            size = (36, 36)
+            resized_image = resize_image(size, user_data.icons.icon)
+            image = base64.b64encode(resized_image).decode('ascii')
+        data = UserData(
+            name=user_data.name,
+            username=user_data.username,
+            last_login=user_data.last_login,
+            avatar=image
+        )
+        users.append(data)
+    return render_template('members.html', title='Music League Members', users=users, next_url=next_url, prev_url=prev_url)
 
 
 @app.route(f"{app.config['APP_WEB_PATH']}/logout")

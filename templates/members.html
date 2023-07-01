@@ -19,7 +19,11 @@
 	    <tbody>
                 {% for userdata in users %}
                     <tr>
-                        <td>{{ userdata.username }}</td>
+                        <td>{{ userdata.username }}
+                        {% if userdata.avatar %}
+                            &nbsp;<img src="data:image/png;base64,{{ userdata.avatar }}"/>
+                        {% endif %}
+                        </td>
                         <td>{{ userdata.name }}</td>
                         <td>{{ userdata.last_login }}</td>
                     </tr>
